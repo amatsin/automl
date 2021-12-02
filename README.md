@@ -4,6 +4,19 @@ conda create -n santander -c conda-forge scikit-learn pandas six python=3.8
 conda activate santander
 ```
 
+## Install Kaggle API
+
+https://github.com/Kaggle/kaggle-api
+
+```bash
+pip install kaggle
+# Download API token from 'Kaggle->Account->Create API Token' to ~/.kaggle folder
+chmod 600 ~/.kaggle/kaggle.json
+# Test API
+kaggle competitions list
+```
+
+
 ## Download dataset
 
 ```bash
