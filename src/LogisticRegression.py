@@ -41,7 +41,7 @@ for fold_, (trn_, val_) in enumerate(folds.split(y, y)):
     trn_x, trn_y = X[trn_, :], y[trn_]
     val_x, val_y = X[val_, :], y[val_]
 
-    clf = LogisticRegression(random_state=42).fit(trn_x, trn_y)
+    clf = LogisticRegression(random_state=RANDOM_STATE).fit(trn_x, trn_y)
 
     val_pred = clf.predict(val_x)
     test_fold_pred = clf.predict(X_test)
