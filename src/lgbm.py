@@ -1,7 +1,10 @@
 import os
 import shutil
-import pandas as pd
+
+import lightgbm as lgb
 import numpy as np
+import pandas as pd
+from sklearn import metrics
 from sklearn.model_selection import StratifiedKFold
 
 NFOLDS = 5
@@ -14,8 +17,8 @@ MODEL_NAME = "{0}__folds{1}".format(script_name, NFOLDS)
 print("Model: {}".format(MODEL_NAME))
 
 print("Reading training data")
-train = pd.read_csv('../input/train.csv')
-test = pd.read_csv('../input/test.csv')
+train = pd.read_csv('../input/santander-customer-transaction-prediction/train.csv')
+test = pd.read_csv('../input/santander-customer-transaction-prediction/test.csv')
 
 y = train.target.values
 train_ids = train.ID_code.values
@@ -33,21 +36,25 @@ folds = StratifiedKFold(n_splits=NFOLDS, shuffle=True, random_state=RANDOM_STATE
 oof_preds = np.zeros((len(train), 1))
 test_preds = np.zeros((len(test), 1))
 
-import lightgbm as lgb
-from sklearn import metrics
-
+param = {'metric': 'auc'}
+num_round = 1000000
+early_stopping_rounds = 3500
 
 for fold_, (trn_, val_) in enumerate(folds.split(y, y)):
     print("Current Fold: {}".format(fold_))
     trn_x, trn_y = X[trn_, :], y[trn_]
     val_x, val_y = X[val_, :], y[val_]
 
-    clf = lgb.LGBMClassifier()
+    trn_data = lgb.Dataset(trn_x, trn_y)
+    val_data = lgb.Dataset(val_x, val_y)
 
-    clf.fit(trn_x, trn_y)
+    clf = lgb.train(param, trn_data, num_round,
+                    valid_sets=[trn_data, val_data],
+                    verbose_eval=1000,
+                    early_stopping_rounds=early_stopping_rounds)
 
-    val_pred = clf.predict(val_x)
-    test_fold_pred = clf.predict(X_test)
+    val_pred = clf.predict(val_x, num_iteration=clf.best_iteration)
+    test_fold_pred = clf.predict(X_test, num_iteration=clf.best_iteration)
 
     print("AUC = {}".format(metrics.roc_auc_score(val_y, val_pred)))
     oof_preds[val_, :] = val_pred.reshape((-1, 1))
@@ -68,7 +75,7 @@ shutil.copyfile(os.path.basename(__file__),
                              '../model_source/{}__{}.py'.format(MODEL_NAME, str(roc_score)))
 
 print("Saving submission file")
-sample = pd.read_csv('../input/sample_submission.csv')
+sample = pd.read_csv('../input/santander-customer-transaction-prediction/sample_submission.csv')
 sample.target = test_preds.astype(float)
 sample.ID_code = test_ids
 sample.to_csv('../model_predictions/submission_{}__{}.csv'.format(MODEL_NAME,
