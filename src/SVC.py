@@ -4,9 +4,10 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 
-from sklearn import svm
 from sklearn.model_selection import StratifiedKFold
 from sklearn import metrics
+
+from cuml.svm import SVC
 
 NFOLDS = 5
 RANDOM_STATE = 42
@@ -41,7 +42,8 @@ for fold_, (trn_, val_) in enumerate(folds.split(y, y)):
     trn_x, trn_y = X[trn_, :], y[trn_]
     val_x, val_y = X[val_, :], y[val_]
 
-    clf = svm.SVC().fit(trn_x, trn_y)
+    clf = SVC(kernel='poly', degree=2, gamma='auto', C=1)
+    clf.fit(trn_x, trn_y)
 
     val_pred = clf.predict(val_x)
     test_fold_pred = clf.predict(X_test)

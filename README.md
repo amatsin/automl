@@ -1,6 +1,7 @@
 ## Create environment
 ```bash
-conda create -n santander -c conda-forge scikit-learn pandas six python=3.8
+# Sklearn environment
+conda create -n santander -c conda-forge scikit-learn lightgbm pandas six python=3.8
 conda activate santander
 ```
 

@@ -41,7 +41,7 @@ for fold_, (trn_, val_) in enumerate(folds.split(y, y)):
     trn_x, trn_y = X[trn_, :], y[trn_]
     val_x, val_y = X[val_, :], y[val_]
 
-    clf = KNeighborsClassifier().fit(trn_x, trn_y)
+    clf = KNeighborsClassifier(n_neighbors=2, n_jobs=-1).fit(trn_x, trn_y)
 
     val_pred = clf.predict(val_x)
     test_fold_pred = clf.predict(X_test)
