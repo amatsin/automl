@@ -34,23 +34,27 @@ folds = StratifiedKFold(n_splits=NFOLDS, shuffle=True, random_state=RANDOM_STATE
 oof_preds = np.zeros((len(train), 1))
 test_preds = np.zeros((len(test), 1))
 
-import xgboost as xgb
 from sklearn import metrics
 
-for fold_, (trn_, val_) in enumerate(folds.split(y, y)):
+import xgboost as xgb
+from wandb.xgboost import wandb_callback
+
+params = dict(eval_metric='auc')
+ITERATIONS = 1000
+EARLY_STOP = 10
+
+for fold_, (train_index, valid_index) in enumerate(folds.split(y, y)):
     print("Current Fold: {}".format(fold_))
-    trn_x, trn_y = X[trn_, :], y[trn_]
-    val_x, val_y = X[val_, :], y[val_]
+    xg_train = xgb.DMatrix(X[train_index, :], y[train_index])
+    xg_valid = xgb.DMatrix(X[valid_index, :], y[valid_index])
+    clf = xgb.train(params, xg_train, ITERATIONS, evals=[(xg_train, "train"), (xg_valid, "eval")],
+                    early_stopping_rounds=EARLY_STOP, verbose_eval=False, callbacks=[wandb_callback()])
 
-    clf = xgb.XGBClassifier(use_label_encoder=False)
+    val_pred = clf.predict(xgb.DMatrix(X[valid_index, :]))
+    test_fold_pred = clf.predict(xgb.DMatrix(X_test))
 
-    clf.fit(trn_x, trn_y, eval_metric='auc')
-
-    val_pred = clf.predict(val_x)
-    test_fold_pred = clf.predict(X_test)
-
-    print("AUC = {}".format(metrics.roc_auc_score(val_y, val_pred)))
-    oof_preds[val_, :] = val_pred.reshape((-1, 1))
+    print("AUC = {}".format(metrics.roc_auc_score(y[valid_index], val_pred)))
+    oof_preds[valid_index, :] = val_pred.reshape((-1, 1))
     test_preds += test_fold_pred.reshape((-1, 1))
 
 test_preds /= NFOLDS
