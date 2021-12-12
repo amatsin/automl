@@ -3,8 +3,12 @@ import shutil
 
 import numpy as np
 import pandas as pd
+import xgboost as xgb
+from sklearn import metrics
 from sklearn.model_selection import StratifiedKFold
+from wandb.xgboost import wandb_callback
 
+import wandb
 from dataloader import load_data
 
 NFOLDS = 5
@@ -34,14 +38,22 @@ folds = StratifiedKFold(n_splits=NFOLDS, shuffle=True, random_state=RANDOM_STATE
 oof_preds = np.zeros((len(train), 1))
 test_preds = np.zeros((len(test), 1))
 
-from sklearn import metrics
-
-import xgboost as xgb
-from wandb.xgboost import wandb_callback
-
 params = dict(eval_metric='auc')
 ITERATIONS = 1000
 EARLY_STOP = 10
+
+config = dict(
+    early_stop=EARLY_STOP,
+    iterations=ITERATIONS,
+    model="XGBoost",
+    nfolds=NFOLDS,
+)
+
+wandb.init(
+    project="baseline",
+    entity="automldudes",
+    config=config,
+)
 
 for fold_, (train_index, valid_index) in enumerate(folds.split(y, y)):
     print("Current Fold: {}".format(fold_))

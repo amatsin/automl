@@ -7,6 +7,7 @@ import pandas as pd
 from sklearn import metrics
 from sklearn.model_selection import StratifiedKFold
 
+import wandb
 from dataloader import load_data
 
 NFOLDS = 5
@@ -40,6 +41,19 @@ param = {'metric': 'auc'}
 num_round = 1000000
 early_stopping_rounds = 3500
 
+config = dict(
+    early_stop=early_stopping_rounds,
+    iterations=num_round,
+    model="LightGBM",
+    nfolds=NFOLDS,
+)
+
+wandb.init(
+    project="baseline",
+    entity="automldudes",
+    config=config,
+)
+
 for fold_, (trn_, val_) in enumerate(folds.split(y, y)):
     print("Current Fold: {}".format(fold_))
     trn_x, trn_y = X[trn_, :], y[trn_]
@@ -51,7 +65,8 @@ for fold_, (trn_, val_) in enumerate(folds.split(y, y)):
     clf = lgb.train(param, trn_data, num_round,
                     valid_sets=[trn_data, val_data],
                     verbose_eval=1000,
-                    early_stopping_rounds=early_stopping_rounds)
+                    early_stopping_rounds=early_stopping_rounds,
+                    callbacks=[wandb.lightgbm.wandb_callback()])
 
     val_pred = clf.predict(val_x, num_iteration=clf.best_iteration)
     test_fold_pred = clf.predict(X_test, num_iteration=clf.best_iteration)
