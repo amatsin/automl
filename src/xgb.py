@@ -1,8 +1,11 @@
 import os
 import shutil
-import pandas as pd
+
 import numpy as np
+import pandas as pd
 from sklearn.model_selection import StratifiedKFold
+
+from dataloader import load_data
 
 NFOLDS = 5
 RANDOM_STATE = 42
@@ -14,8 +17,7 @@ MODEL_NAME = "{0}__folds{1}".format(script_name, NFOLDS)
 print("Model: {}".format(MODEL_NAME))
 
 print("Reading training data")
-train = pd.read_csv('../input/train.csv')
-test = pd.read_csv('../input/test.csv')
+train, test = load_data()
 
 y = train.target.values
 train_ids = train.ID_code.values
@@ -36,7 +38,6 @@ test_preds = np.zeros((len(test), 1))
 import xgboost as xgb
 from sklearn import metrics
 
-
 for fold_, (trn_, val_) in enumerate(folds.split(y, y)):
     print("Current Fold: {}".format(fold_))
     trn_x, trn_y = X[trn_, :], y[trn_]
@@ -44,7 +45,7 @@ for fold_, (trn_, val_) in enumerate(folds.split(y, y)):
 
     clf = xgb.XGBClassifier()
 
-    clf.fit(trn_x, trn_y)
+    clf.fit(trn_x, trn_y, eval_metric='auc')
 
     val_pred = clf.predict(val_x)
     test_fold_pred = clf.predict(X_test)
@@ -59,17 +60,17 @@ roc_score = metrics.roc_auc_score(y, oof_preds.ravel())
 print("Overall AUC = {}".format(roc_score))
 
 print("Saving OOF predictions")
-oof_preds = pd.DataFrame(np.column_stack((train_ids, 
-                                                                                   oof_preds.ravel())), columns=['ID_code', 'target'])
+oof_preds = pd.DataFrame(np.column_stack((train_ids,
+                                          oof_preds.ravel())), columns=['ID_code', 'target'])
 oof_preds.to_csv('../kfolds/{}__{}.csv'.format(MODEL_NAME, str(roc_score)), index=False)
 
 print("Saving code to reproduce")
-shutil.copyfile(os.path.basename(__file__), 
-                             '../model_source/{}__{}.py'.format(MODEL_NAME, str(roc_score)))
+shutil.copyfile(os.path.basename(__file__),
+                '../model_source/{}__{}.py'.format(MODEL_NAME, str(roc_score)))
 
 print("Saving submission file")
 sample = pd.read_csv('../input/sample_submission.csv')
 sample.target = test_preds.astype(float)
 sample.ID_code = test_ids
 sample.to_csv('../model_predictions/submission_{}__{}.csv'.format(MODEL_NAME,
-                                                                                                                     str(roc_score)), index=False)
+                                                                  str(roc_score)), index=False)
