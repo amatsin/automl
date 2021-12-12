@@ -8,6 +8,8 @@ from sklearn import metrics
 from sklearn.model_selection import StratifiedKFold
 from sklearn.neighbors import KNeighborsClassifier
 
+from dataloader import load_data
+
 NFOLDS = 5
 RANDOM_STATE = 42
 
@@ -16,9 +18,7 @@ MODEL_NAME = "{0}__folds{1}".format(script_name, NFOLDS)
 
 print("Model: {}".format(MODEL_NAME))
 
-print("Reading training data")
-train = pd.read_csv('../input/santander-customer-transaction-prediction/train.csv')
-test = pd.read_csv('../input/santander-customer-transaction-prediction/test.csv')
+train, test = load_data()
 
 y = train.target.values
 train_ids = train.ID_code.values
@@ -41,7 +41,7 @@ for fold_, (trn_, val_) in enumerate(folds.split(y, y)):
     trn_x, trn_y = X[trn_, :], y[trn_]
     val_x, val_y = X[val_, :], y[val_]
 
-    clf = KNeighborsClassifier().fit(trn_x, trn_y)
+    clf = KNeighborsClassifier(n_jobs=-1).fit(trn_x, trn_y)
 
     val_pred = clf.predict(val_x)
     test_fold_pred = clf.predict(X_test)

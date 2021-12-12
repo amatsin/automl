@@ -8,6 +8,8 @@ from sklearn import metrics
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import StratifiedKFold
 
+from dataloader import load_data
+
 NFOLDS = 5
 RANDOM_STATE = 42
 
@@ -17,8 +19,7 @@ MODEL_NAME = "{0}__folds{1}".format(script_name, NFOLDS)
 print("Model: {}".format(MODEL_NAME))
 
 print("Reading training data")
-train = pd.read_csv('../input/santander-customer-transaction-prediction/train.csv')
-test = pd.read_csv('../input/santander-customer-transaction-prediction/test.csv')
+train, test = load_data()
 
 y = train.target.values
 train_ids = train.ID_code.values
@@ -41,7 +42,7 @@ for fold_, (trn_, val_) in enumerate(folds.split(y, y)):
     trn_x, trn_y = X[trn_, :], y[trn_]
     val_x, val_y = X[val_, :], y[val_]
 
-    clf = LogisticRegression(random_state=42).fit(trn_x, trn_y)
+    clf = LogisticRegression(random_state=RANDOM_STATE).fit(trn_x, trn_y)
 
     val_pred = clf.predict(val_x)
     test_fold_pred = clf.predict(X_test)

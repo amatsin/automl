@@ -8,6 +8,8 @@ from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import StratifiedKFold
 from sklearn import metrics
 
+from dataloader import load_data
+
 NFOLDS = 5
 RANDOM_STATE = 42
 
@@ -16,9 +18,7 @@ MODEL_NAME = "{0}__folds{1}".format(script_name, NFOLDS)
 
 print("Model: {}".format(MODEL_NAME))
 
-print("Reading training data")
-train = pd.read_csv('../input/santander-customer-transaction-prediction/train.csv')
-test = pd.read_csv('../input/santander-customer-transaction-prediction/test.csv')
+train, test = load_data()
 
 y = train.target.values
 train_ids = train.ID_code.values
