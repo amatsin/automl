@@ -1,4 +1,5 @@
 ## Create environment
+
 ```bash
 # Sklearn environment
 conda create -n santander -c conda-forge scikit-learn lightgbm pandas six python=3.8
@@ -17,7 +18,6 @@ chmod 600 ~/.kaggle/kaggle.json
 kaggle competitions list
 ```
 
-
 ## Download dataset
 
 ```bash
@@ -28,12 +28,21 @@ rm santander-customer-transaction-prediction.zip
 ```
 
 ## Running model
+
 ```bash
 cd src
 python LinearRegression.py
 ```
 
 ## Submit model to Kaggle
+
 ```bash
 kaggle competitions submit -c santander-customer-transaction-prediction -f submission_LogisticRegression__folds5__0.611460871943926.csv -m "LogisticRegression"
+```
+
+## Weights and Biases setup
+
+```bash
+pip install wandb
+wandb login
 ```

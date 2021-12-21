@@ -26,12 +26,44 @@ def scale_data(train, test):
 
     return train, test
 
-def load_data():
+def remove_synthetic(test):
+    #Code taken from: https://www.kaggle.com/yag320/list-of-fake-samples-and-public-private-lb-split
+    print("Removing syntetic data from test")
+    df_test = test
+    df_test.drop(['ID_code'], axis=1, inplace=True)
+    df_test = df_test.values
+
+    unique_samples = []
+    unique_count = np.zeros_like(df_test)
+    for feature in tqdm(range(df_test.shape[1])):
+        _, index_, count_ = np.unique(df_test[:, feature], return_counts=True, return_index=True)
+        unique_count[index_[count_ == 1], feature] += 1
+
+    # Samples which have unique values are real the others are fake
+    real_samples_indexes = np.argwhere(np.sum(unique_count, axis=1) > 0)[:, 0]
+    synthetic_samples_indexes = np.argwhere(np.sum(unique_count, axis=1) == 0)[:, 0]
+
+    print(len(real_samples_indexes))
+    print(len(synthetic_samples_indexes))
+    
+    return test
+    
+    
+def frequency_encoding(train, test):
+    
+    
+    return train, test
+
+
+def load_data(scale=True):
     print("Reading training data")
     train = pd.read_csv('../input/santander-customer-transaction-prediction/train.csv')
     print("Train length: ", len(train))
     train = balance_data(train)
     test = pd.read_csv('../input/santander-customer-transaction-prediction/test.csv')
+    test = remove_synthetic(test)
     print("Test length: ", len(test))
-    train, test = scale_data(train, test)
+    if(scale):
+        train, test = scale_data(train, test)
+    
     return train, test
