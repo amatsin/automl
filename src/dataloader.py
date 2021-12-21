@@ -49,15 +49,10 @@ def remove_synthetic(test):
     return test
     
     
-<<<<<<< Updated upstream
 def frequency_encoding(train, test):
-    
     
     return train, test
 
-
-=======
->>>>>>> Stashed changes
 def load_data(scale=True):
     print("Reading training data")
     train = pd.read_csv('../input/santander-customer-transaction-prediction/train.csv')
