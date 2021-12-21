@@ -3,6 +3,7 @@ from sklearn.preprocessing import StandardScaler
 import numpy as np
 from tqdm import tqdm_notebook as tqdm
 
+
 def balance_data(train):
     # TODO: is there better way to sample?
     train_true = train.loc[train['target'] == 1]
@@ -13,12 +14,13 @@ def balance_data(train):
     print("Train balanced length: ", len(train))
     return train
 
+
 def scale_data(train, test):
     print(train)
     print(test)
     X_train = train.drop(['ID_code', 'target'], axis=1)
     X_columns = X_train.columns
-    X_test = test.drop(['ID_code', 'target'], axis=1)
+    X_test = test.drop(['ID_code'], axis=1)
 
     scaler = StandardScaler()
     scaler.fit(X_train)
@@ -30,11 +32,12 @@ def scale_data(train, test):
 
     return train, test
 
+
 def remove_synthetic(test):
-    #Code taken from: https://www.kaggle.com/yag320/list-of-fake-samples-and-public-private-lb-split
+    # Code taken from: https://www.kaggle.com/yag320/list-of-fake-samples-and-public-private-lb-split
     print("Removing synthetic data from test")
     df_test = test.drop(['ID_code'], axis=1)
-   
+
     df_test = df_test.values
 
     unique_samples = []
@@ -49,39 +52,41 @@ def remove_synthetic(test):
 
     print(len(real_samples_indexes))
     print(len(synthetic_samples_indexes))
-    
+
     return test.iloc[~test.index.isin(synthetic_samples_indexes)]
-    
-    
-def frequency_encoding(train, test):    
-    #code taken from : https://www.kaggle.com/ilu000/simplistic-magic-lgbmv
-    
+
+
+def frequency_encoding(train, test):
+    # Code taken from : https://www.kaggle.com/ilu000/simplistic-magic-lgbmv
+
     idx = [c for c in train.columns if c not in ['ID_code', 'target']]
     traintest = pd.concat([train, test])
     traintest = traintest.reset_index(drop=True)
-    
+
     for col in idx:
-        traintest[col+'_freq'] = traintest[col].map(traintest.groupby(col).size())
-        
-    train_df = traintest[:200000]
-    test_df = traintest[200000:]
-    
-    print('Train and test shape:',train_df.shape, test_df.shape)
+        traintest[col + '_freq'] = traintest[col].map(traintest.groupby(col).size())
+
+    train_df = traintest[:len(train)]
+    test_df = traintest[len(train):]
+    test_df = test_df.drop(['target'], axis=1)
+
+    print('Train and test shape:', train_df.shape, test_df.shape)
     return train_df, test_df
+
 
 def load_data(scale=True, balance=True):
     print("Reading training data")
     train = pd.read_csv('../input/santander-customer-transaction-prediction/train.csv')
     print("Train length: ", len(train))
-    
+
     test = pd.read_csv('../input/santander-customer-transaction-prediction/test.csv')
     train, test = frequency_encoding(train, test)
-    if(balance):
+    if balance:
         train = balance_data(train)
-    
+
     test = remove_synthetic(test)
     print("Test length: ", len(test))
-    if(scale):
+    if scale:
         train, test = scale_data(train, test)
-    
+
     return train, test
