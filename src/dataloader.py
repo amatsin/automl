@@ -16,8 +16,6 @@ def balance_data(train):
 
 
 def scale_data(train, test):
-    print(train)
-    print(test)
     X_train = train.drop(['ID_code', 'target'], axis=1)
     X_columns = X_train.columns
     X_test = test.drop(['ID_code'], axis=1)

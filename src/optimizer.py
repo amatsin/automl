@@ -1,31 +1,24 @@
-import lightgbm as lgb
+import numpy as np
 import xgboost as xgb
-#import catboost as ctb
+import lightgbm as lgb
 from hyperopt import fmin, STATUS_OK, STATUS_FAIL
-
-# Source: https://towardsdatascience.com/an-example-of-hyperparameter-optimization-on-xgboost-lightgbm-and-catboost-using-hyperopt-12bc41a271e
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import StratifiedKFold, train_test_split
 
 from dataloader import load_data
 
-
 class HyperBoostOptimizer(object):
+    NFOLDS = 5
+    RANDOM_STATE = 42
 
     def __init__(self):
-        x_train, x_test, y_train, y_test = self.prepare_data()
-        self.x_train = x_train
-        self.x_test = x_test
-        self.y_train = y_train
-        self.y_test = y_test
+        self.X, self.y = self.prepare_data()
 
     def prepare_data(self):
         train, test = load_data()
-
         y = train.target.values
         train = train.drop(['ID_code', 'target'], axis=1)
         X = train.values.astype(float)
-
-        return train_test_split(X, y, test_size=0.2, random_state=42)
+        return X, y
 
     def process(self, fn_name, space, trials, algo, max_evals):
         fn = getattr(self, fn_name)
@@ -36,22 +29,26 @@ class HyperBoostOptimizer(object):
                     'exception': str(e)}
         return result, trials
 
-    def xgb_reg(self, para):
-        reg = xgb.XGBRegressor(**para['reg_params'])
-        return self.train_reg(reg, para)
-
     def lgb_reg(self, para):
-        reg = lgb.LGBMRegressor(**para['reg_params'])
-        return self.train_reg(reg, para)
+        clf = lgb.LGBMClassifier(**para['reg_params'])
+        return self.crossvalidate(clf, para)
 
-    #def ctb_reg(self, para):
-    #    reg = ctb.CatBoostRegressor(**para['reg_params'])
-    #    return self.train_reg(reg, para)
+    def xgb_clf(self, para):
+        clf = xgb.XGBClassifier(**para['reg_params'])
+        return self.crossvalidate(clf, para)
 
-    def train_reg(self, reg, para):
-        reg.fit(self.x_train, self.y_train,
-                eval_set=[(self.x_train, self.y_train), (self.x_test, self.y_test)],
-                **para['fit_params'])
-        pred = reg.predict(self.x_test)
-        loss = para['loss_func'](self.y_test, pred)
+    def crossvalidate(self, clf, para):
+        folds = StratifiedKFold(n_splits=self.NFOLDS, shuffle=True, random_state=self.RANDOM_STATE)
+        oof_preds = np.zeros((len(self.X), 1))
+
+        for fold_, (train_index, valid_index) in enumerate(folds.split(self.y, self.y)):
+            trn_x, trn_y = self.X[train_index, :], self.y[train_index]
+            val_x, val_y = self.X[valid_index, :], self.y[valid_index]
+
+            clf.fit(trn_x, trn_y, eval_set=[(trn_x, trn_y), (val_x, val_y)], **para['fit_params'])
+            val_pred = clf.predict_proba(val_x)[:, 1]
+
+            oof_preds[valid_index, :] = val_pred.reshape((-1, 1))
+
+        loss = para['loss_func'](self.y, oof_preds.ravel())
         return {'loss': loss, 'status': STATUS_OK}

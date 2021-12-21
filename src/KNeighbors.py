@@ -43,8 +43,8 @@ for fold_, (trn_, val_) in enumerate(folds.split(y, y)):
 
     clf = KNeighborsClassifier(n_jobs=-1).fit(trn_x, trn_y)
 
-    val_pred = clf.predict(val_x)
-    test_fold_pred = clf.predict(X_test)
+    val_pred = clf.predict_proba(val_x)[:, 1]
+    test_fold_pred = clf.predict_proba(X_test)[:, 1]
 
     print("AUC = {}".format(metrics.roc_auc_score(val_y, val_pred)))
     oof_preds[val_, :] = val_pred.reshape((-1, 1))

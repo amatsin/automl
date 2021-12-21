@@ -1,5 +1,6 @@
 import os
 import shutil
+import warnings
 
 import lightgbm as lgb
 import numpy as np
@@ -9,6 +10,9 @@ from sklearn.model_selection import StratifiedKFold
 
 import wandb
 from dataloader import load_data
+
+warnings.filterwarnings("ignore")  # to avoid deprecation warnings
+
 
 NFOLDS = 5
 RANDOM_STATE = 42
