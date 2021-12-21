@@ -1,5 +1,7 @@
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
+import numpy as np
+from tqdm import tqdm_notebook as tqdm
 
 def balance_data(train):
     # TODO: is there better way to sample?
@@ -12,9 +14,11 @@ def balance_data(train):
     return train
 
 def scale_data(train, test):
+    print(train)
+    print(test)
     X_train = train.drop(['ID_code', 'target'], axis=1)
     X_columns = X_train.columns
-    X_test = test.drop(['ID_code'], axis=1)
+    X_test = test.drop(['ID_code', 'target'], axis=1)
 
     scaler = StandardScaler()
     scaler.fit(X_train)
@@ -28,9 +32,9 @@ def scale_data(train, test):
 
 def remove_synthetic(test):
     #Code taken from: https://www.kaggle.com/yag320/list-of-fake-samples-and-public-private-lb-split
-    print("Removing syntetic data from test")
-    df_test = test
-    df_test.drop(['ID_code'], axis=1, inplace=True)
+    print("Removing synthetic data from test")
+    df_test = test.drop(['ID_code'], axis=1)
+   
     df_test = df_test.values
 
     unique_samples = []
@@ -46,19 +50,35 @@ def remove_synthetic(test):
     print(len(real_samples_indexes))
     print(len(synthetic_samples_indexes))
     
-    return test
+    return test.iloc[~test.index.isin(synthetic_samples_indexes)]
     
     
-def frequency_encoding(train, test):
+def frequency_encoding(train, test):    
+    #code taken from : https://www.kaggle.com/ilu000/simplistic-magic-lgbmv
     
-    return train, test
+    idx = [c for c in train.columns if c not in ['ID_code', 'target']]
+    traintest = pd.concat([train, test])
+    traintest = traintest.reset_index(drop=True)
+    
+    for col in idx:
+        traintest[col+'_freq'] = traintest[col].map(traintest.groupby(col).size())
+        
+    train_df = traintest[:200000]
+    test_df = traintest[200000:]
+    
+    print('Train and test shape:',train_df.shape, test_df.shape)
+    return train_df, test_df
 
-def load_data(scale=True):
+def load_data(scale=True, balance=True):
     print("Reading training data")
     train = pd.read_csv('../input/santander-customer-transaction-prediction/train.csv')
     print("Train length: ", len(train))
-    train = balance_data(train)
+    
     test = pd.read_csv('../input/santander-customer-transaction-prediction/test.csv')
+    train, test = frequency_encoding(train, test)
+    if(balance):
+        train = balance_data(train)
+    
     test = remove_synthetic(test)
     print("Test length: ", len(test))
     if(scale):
