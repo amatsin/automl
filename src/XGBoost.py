@@ -1,6 +1,7 @@
 import os
 import shutil
 import warnings
+from collections import Counter
 
 import numpy as np
 import pandas as pd
@@ -11,6 +12,7 @@ from wandb.xgboost import wandb_callback
 
 import wandb
 from dataloader import load_data
+from imblearn.over_sampling import RandomOverSampler
 
 
 def run():
@@ -20,7 +22,7 @@ def run():
     script_name = os.path.basename(__file__).split('.')[0]
     MODEL_NAME = "{0}__folds{1}".format(script_name, NFOLDS)
     print("Model: {}".format(MODEL_NAME))
-    train, test = load_data(balance_by_smallest=False)
+    train, test = load_data(balance=False)
     y = train.target.values
     train_ids = train.ID_code.values
     train = train.drop(['ID_code', 'target'], axis=1)
@@ -30,6 +32,8 @@ def run():
     X = train.values.astype(float)
     X_test = test.values.astype(float)
     folds = StratifiedKFold(n_splits=NFOLDS, shuffle=True, random_state=RANDOM_STATE)
+    sampler = RandomOverSampler(random_state=RANDOM_STATE)
+
     oof_preds = np.zeros((len(train), 1))
     test_preds = np.zeros((len(test), 1))
     params = dict(eval_metric='auc')
@@ -40,17 +44,25 @@ def run():
         iterations=ITERATIONS,
         model="XGBoost",
         nfolds=NFOLDS,
-        balance_data_by_smallest_class=False
     )
     wandb.init(
         project="baseline",
         entity="automldudes",
         config=config,
     )
+
     for fold_, (train_index, valid_index) in enumerate(folds.split(y, y)):
         print("Current Fold: {}".format(fold_))
-        xg_train = xgb.DMatrix(X[train_index, :], y[train_index])
-        xg_valid = xgb.DMatrix(X[valid_index, :], y[valid_index])
+
+        X_res, y_res = sampler.fit_resample(X[train_index, :], y[train_index])
+        print(f"Training target statistics: {Counter(y_res)}")
+
+        X_val, y_val = sampler.fit_resample(X[valid_index, :], y[valid_index])
+        print(f"Valid target statistics: {Counter(y_val)}")
+
+        xg_train = xgb.DMatrix(X_res, y_res)
+        xg_valid = xgb.DMatrix(X_val, y_val)
+
         clf = xgb.train(params, xg_train, ITERATIONS, evals=[(xg_train, "train"), (xg_valid, "eval")],
                         early_stopping_rounds=EARLY_STOP, verbose_eval=False, callbacks=[wandb_callback()])
 
