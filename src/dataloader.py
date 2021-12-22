@@ -6,11 +6,18 @@ from tqdm.auto import tqdm
 
 def balance_data(train):
     # TODO: is there better way to sample?
-    train_true = train.loc[train['target'] == 1]
-    print("Train target true length: ", len(train_true))
-    train_false = train.loc[train['target'] != 1].sample(frac=1)[:len(train_true)]
-    print("Train target false length: ", len(train_false))
-    train = pd.concat([train_true, train_false], ignore_index=True).sample(frac=1)
+    train_one = train.loc[train['target'] == 1]
+    print("Initial train target==1 length: ", len(train_one))
+    train_zero = train.loc[train['target'] != 1]
+    print("Initial train target==0 length: ", len(train_zero))
+
+    class_size = max(len(train_one), len(train_zero))
+    train_one_balanced = train_one.sample(n=class_size, replace=len(train_one) != class_size, random_state=42)
+    print("Balanced train target==1 length: ", len(train_one_balanced))
+    train_zero_balanced = train_zero.sample(n=class_size, replace=len(train_zero) != class_size, random_state=42)
+    print("Balanced train target==0 length: ", len(train_zero_balanced))
+
+    train = pd.concat([train_one_balanced, train_zero_balanced], ignore_index=True).sample(frac=1, random_state=42)
     print("Train balanced length: ", len(train))
     return train
 
