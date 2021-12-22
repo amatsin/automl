@@ -4,13 +4,32 @@ import numpy as np
 from tqdm.auto import tqdm
 
 
-def balance_data(train):
-    # TODO: is there better way to sample?
+def balance_data(train, by_smallest=True):
     train_one = train.loc[train['target'] == 1]
     print("Initial train target==1 length: ", len(train_one))
     train_zero = train.loc[train['target'] != 1]
     print("Initial train target==0 length: ", len(train_zero))
+    if by_smallest:
+        train = balance_data_by_smallest_class(train_one, train_zero)
+    else:
+        train = balance_data_by_biggest_class(train_one, train_zero)
+    print("Train balanced length: ", len(train))
+    return train
 
+
+def balance_data_by_smallest_class(train_one, train_zero):
+    class_size = min(len(train_one), len(train_zero))
+    if len(train_one) != class_size:
+        train_one = train_one.sample(n=class_size, random_state=42)
+        print("Balanced train target==1 length: ", len(train_one))
+    else:
+        train_zero = train_zero.sample(n=class_size, random_state=42)
+        print("Balanced train target==0 length: ", len(train_zero))
+
+    return pd.concat([train_one, train_zero], ignore_index=True).sample(frac=1, random_state=42)
+
+
+def balance_data_by_biggest_class(train_one, train_zero):
     class_size = max(len(train_one), len(train_zero))
     if len(train_one) != class_size:
         train_one = train_one.sample(n=class_size, replace=True, random_state=42)
@@ -19,9 +38,7 @@ def balance_data(train):
         train_zero = train_zero.sample(n=class_size, replace=True, random_state=42)
         print("Balanced train target==0 length: ", len(train_zero))
 
-    train = pd.concat([train_one, train_zero], ignore_index=True).sample(frac=1, random_state=42)
-    print("Train balanced length: ", len(train))
-    return train
+    return pd.concat([train_one, train_zero], ignore_index=True).sample(frac=1, random_state=42)
 
 
 def scale_data(train, test):
@@ -80,7 +97,7 @@ def frequency_encoding(train, test):
     return train_df, test_df
 
 
-def load_data(scale=True, balance=True):
+def load_data(scale=True, balance=True, balance_by_smallest=True):
     print("Reading training data")
     train = pd.read_csv('../input/santander-customer-transaction-prediction/train.csv')
     print("Train length: ", len(train))
@@ -88,7 +105,7 @@ def load_data(scale=True, balance=True):
     test = pd.read_csv('../input/santander-customer-transaction-prediction/test.csv')
     train, test = frequency_encoding(train, test)
     if balance:
-        train = balance_data(train)
+        train = balance_data(train, by_smallest=balance_by_smallest)
 
     test = remove_synthetic(test)
     print("Test length: ", len(test))

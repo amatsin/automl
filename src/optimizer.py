@@ -2,7 +2,7 @@ import numpy as np
 import xgboost as xgb
 import lightgbm as lgb
 from hyperopt import fmin, STATUS_OK, STATUS_FAIL
-from sklearn.model_selection import StratifiedKFold, train_test_split
+from sklearn.model_selection import StratifiedKFold
 
 from dataloader import load_data
 
