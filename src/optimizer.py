@@ -1,3 +1,5 @@
+from copy import copy
+
 import numpy as np
 import xgboost as xgb
 import lightgbm as lgb
@@ -20,17 +22,28 @@ class HyperBoostOptimizer(object):
     NFOLDS = 5
     RANDOM_STATE = 42
 
-    def __init__(self):
+    def __init__(self, fn_name, space):
+        self.fn = getattr(self, fn_name)
+        self.space = space
         self.X, self.y = prepare_data()
+        self.baseline_loss = self.find_baseline_loss()
 
-    def process(self, fn_name, space, trials, algo, max_evals):
-        fn = getattr(self, fn_name)
+    def early_stop_fn(self, trials, *args):
+        last_result = trials.results[-1]
+        if last_result['status'] != 'ok':
+            return True, args
+        if last_result['loss'] < self.baseline_loss:
+            print(f'Reached better result {last_result["loss"]} than baseline {self.baseline_loss} in {len(trials.results)} trials')
+            return True, args
+        return False, args
+
+    def process(self, trials, algo):
         try:
-            result = fmin(fn=fn, space=space, algo=algo, max_evals=max_evals, trials=trials)
+            result = fmin(fn=self.fn, space=self.space, algo=algo, trials=trials, early_stop_fn=self.early_stop_fn)
         except Exception as e:
             return {'status': STATUS_FAIL,
                     'exception': str(e)}
-        return result, trials
+        return result
 
     def lgb_clf(self, para):
         clf = lgb.LGBMClassifier(**para['reg_params'])
@@ -57,3 +70,10 @@ class HyperBoostOptimizer(object):
 
         loss = para['loss_func'](self.y, oof_preds.ravel())
         return {'loss': loss, 'status': STATUS_OK}
+
+    def find_baseline_loss(self):
+        this_para = copy(self.space)
+        this_para['reg_params'] = dict()
+        baseline_loss = self.fn(this_para)['loss']
+        print(f'Baseline loss: {baseline_loss}')
+        return baseline_loss
