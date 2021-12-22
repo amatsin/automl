@@ -12,12 +12,14 @@ def balance_data(train):
     print("Initial train target==0 length: ", len(train_zero))
 
     class_size = max(len(train_one), len(train_zero))
-    train_one_balanced = train_one.sample(n=class_size, replace=len(train_one) != class_size, random_state=42)
-    print("Balanced train target==1 length: ", len(train_one_balanced))
-    train_zero_balanced = train_zero.sample(n=class_size, replace=len(train_zero) != class_size, random_state=42)
-    print("Balanced train target==0 length: ", len(train_zero_balanced))
+    if len(train_one) != class_size:
+        train_one = train_one.sample(n=class_size, replace=True, random_state=42)
+        print("Balanced train target==1 length: ", len(train_one))
+    else:
+        train_zero = train_zero.sample(n=class_size, replace=True, random_state=42)
+        print("Balanced train target==0 length: ", len(train_zero))
 
-    train = pd.concat([train_one_balanced, train_zero_balanced], ignore_index=True).sample(frac=1, random_state=42)
+    train = pd.concat([train_one, train_zero], ignore_index=True).sample(frac=1, random_state=42)
     print("Train balanced length: ", len(train))
     return train
 
