@@ -1,7 +1,7 @@
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 import numpy as np
-from tqdm import tqdm_notebook as tqdm
+from tqdm.auto import tqdm
 
 
 def balance_data(train):
@@ -38,7 +38,6 @@ def remove_synthetic(test):
 
     df_test = df_test.values
 
-    unique_samples = []
     unique_count = np.zeros_like(df_test)
     for feature in tqdm(range(df_test.shape[1])):
         _, index_, count_ = np.unique(df_test[:, feature], return_counts=True, return_index=True)
@@ -48,8 +47,8 @@ def remove_synthetic(test):
     real_samples_indexes = np.argwhere(np.sum(unique_count, axis=1) > 0)[:, 0]
     synthetic_samples_indexes = np.argwhere(np.sum(unique_count, axis=1) == 0)[:, 0]
 
-    print(len(real_samples_indexes))
-    print(len(synthetic_samples_indexes))
+    print(f'real_samples_indexes {len(real_samples_indexes)}')
+    print(f'synthetic_samples_indexes {len(synthetic_samples_indexes)}')
 
     return test.iloc[~test.index.isin(synthetic_samples_indexes)]
 

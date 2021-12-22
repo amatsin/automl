@@ -33,7 +33,7 @@ def parameters():
     xgb_para = dict()
     xgb_para['reg_params'] = xgb_reg_params
     xgb_para['fit_params'] = xgb_fit_params
-    xgb_para['loss_func'] = lambda y, pred: 1-roc_auc_score(y, pred)
+    xgb_para['loss_func'] = lambda y, pred: 1 - roc_auc_score(y, pred)
     return xgb_para
 
 

@@ -29,10 +29,11 @@ def parameters():
 
     return lgb_para
 
+
 def optimize():
     lgb_para = parameters()
     obj = HyperBoostOptimizer()
-    lgb_opt = obj.process(fn_name='lgb_reg', space=lgb_para, trials=Trials(), algo=tpe.suggest, max_evals=100)
+    lgb_opt = obj.process(fn_name='lgb_clf', space=lgb_para, trials=Trials(), algo=tpe.suggest, max_evals=100)
     print(lgb_opt)
 
 

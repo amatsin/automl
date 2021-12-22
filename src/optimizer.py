@@ -6,19 +6,21 @@ from sklearn.model_selection import StratifiedKFold, train_test_split
 
 from dataloader import load_data
 
+
+def prepare_data():
+    train, test = load_data()
+    y = train.target.values
+    train = train.drop(['ID_code', 'target'], axis=1)
+    X = train.values.astype(float)
+    return X, y
+
+
 class HyperBoostOptimizer(object):
     NFOLDS = 5
     RANDOM_STATE = 42
 
     def __init__(self):
-        self.X, self.y = self.prepare_data()
-
-    def prepare_data(self):
-        train, test = load_data()
-        y = train.target.values
-        train = train.drop(['ID_code', 'target'], axis=1)
-        X = train.values.astype(float)
-        return X, y
+        self.X, self.y = prepare_data()
 
     def process(self, fn_name, space, trials, algo, max_evals):
         fn = getattr(self, fn_name)
@@ -29,7 +31,7 @@ class HyperBoostOptimizer(object):
                     'exception': str(e)}
         return result, trials
 
-    def lgb_reg(self, para):
+    def lgb_clf(self, para):
         clf = lgb.LGBMClassifier(**para['reg_params'])
         return self.crossvalidate(clf, para)
 
