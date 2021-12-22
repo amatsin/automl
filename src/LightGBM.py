@@ -5,6 +5,7 @@ import warnings
 import lightgbm as lgb
 import numpy as np
 import pandas as pd
+from imblearn.over_sampling import SMOTE, RandomOverSampler
 from sklearn import metrics
 from sklearn.model_selection import StratifiedKFold
 
@@ -58,12 +59,15 @@ wandb.init(
     config=config,
 )
 
+sampler = RandomOverSampler(random_state=RANDOM_STATE)
+
 for fold_, (trn_, val_) in enumerate(folds.split(y, y)):
     print("Current Fold: {}".format(fold_))
-    trn_x, trn_y = X[trn_, :], y[trn_]
+
+    trn_x_up, trn_y_up = sampler.fit_resample(X[trn_, :], y[trn_])
     val_x, val_y = X[val_, :], y[val_]
 
-    trn_data = lgb.Dataset(trn_x, trn_y)
+    trn_data = lgb.Dataset(trn_x_up, trn_y_up)
     val_data = lgb.Dataset(val_x, val_y)
 
     clf = lgb.train(param, trn_data, num_round,

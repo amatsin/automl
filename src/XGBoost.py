@@ -22,7 +22,7 @@ def run():
     script_name = os.path.basename(__file__).split('.')[0]
     MODEL_NAME = "{0}__folds{1}".format(script_name, NFOLDS)
     print("Model: {}".format(MODEL_NAME))
-    train, test = load_data(balance=False)
+    train, test = load_data()
     y = train.target.values
     train_ids = train.ID_code.values
     train = train.drop(['ID_code', 'target'], axis=1)
@@ -57,8 +57,7 @@ def run():
         X_res, y_res = sampler.fit_resample(X[train_index, :], y[train_index])
         print(f"Training target statistics: {Counter(y_res)}")
 
-        X_val, y_val = sampler.fit_resample(X[valid_index, :], y[valid_index])
-        print(f"Valid target statistics: {Counter(y_val)}")
+        X_val, y_val = X[valid_index, :], y[valid_index]
 
         xg_train = xgb.DMatrix(X_res, y_res)
         xg_valid = xgb.DMatrix(X_val, y_val)
