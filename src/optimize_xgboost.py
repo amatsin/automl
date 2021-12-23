@@ -2,7 +2,6 @@ import warnings
 
 import numpy as np
 from hyperopt import hp
-from hyperopt import tpe, Trials
 from sklearn.metrics import roc_auc_score
 
 from optimizer import HyperBoostOptimizer
@@ -40,7 +39,7 @@ def parameters():
 def optimize():
     xgb_para = parameters()
     obj = HyperBoostOptimizer(fn_name='xgb_clf', space=xgb_para)
-    xgb_opt = obj.process(trials=Trials(), algo=tpe.suggest)
+    xgb_opt = obj.process()
     print(xgb_opt)
 
 

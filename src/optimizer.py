@@ -3,7 +3,7 @@ from copy import copy
 import numpy as np
 import xgboost as xgb
 import lightgbm as lgb
-from hyperopt import fmin, STATUS_OK, STATUS_FAIL
+from hyperopt import fmin, STATUS_OK, STATUS_FAIL, tpe, Trials
 from imblearn.over_sampling import RandomOverSampler
 from sklearn.model_selection import StratifiedKFold
 
@@ -26,20 +26,21 @@ class HyperBoostOptimizer(object):
         self.fn = getattr(self, fn_name)
         self.space = space
         self.X, self.y = prepare_data()
-        self.baseline_loss = self.find_baseline_loss()
+        self.default_hyperparams_loss = self.find_loss_with_default_hyperparams()
 
     def early_stop_fn(self, trials, *args):
         last_result = trials.results[-1]
         if last_result['status'] != 'ok':
             return True, args
-        if last_result['loss'] < self.baseline_loss:
-            print(f'Reached better result {last_result["loss"]} than baseline {self.baseline_loss} in {len(trials.results)} trials')
+        if last_result['loss'] <= self.default_hyperparams_loss:
+            print(f'Reached better or equal result {last_result["loss"]} than baseline {self.default_hyperparams_loss} in {len(trials.results)} trials')
             return True, args
         return False, args
 
-    def process(self, trials, algo):
+    def process(self):
+        np.random.seed(self.RANDOM_STATE)
         try:
-            result = fmin(fn=self.fn, space=self.space, algo=algo, trials=trials, early_stop_fn=self.early_stop_fn)
+            result = fmin(fn=self.fn, space=self.space, algo=tpe.suggest, trials=Trials(), early_stop_fn=self.early_stop_fn)
         except Exception as e:
             return {'status': STATUS_FAIL,
                     'exception': str(e)}
@@ -71,9 +72,9 @@ class HyperBoostOptimizer(object):
         loss = para['loss_func'](self.y, oof_preds.ravel())
         return {'loss': loss, 'status': STATUS_OK}
 
-    def find_baseline_loss(self):
+    def find_loss_with_default_hyperparams(self):
         this_para = copy(self.space)
         this_para['reg_params'] = dict()
         baseline_loss = self.fn(this_para)['loss']
-        print(f'Baseline loss: {baseline_loss}')
+        print(f'Baseline loss with default hyperparameters: {baseline_loss}')
         return baseline_loss
