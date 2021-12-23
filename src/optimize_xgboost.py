@@ -9,26 +9,24 @@ from optimizer import HyperBoostOptimizer
 
 
 def parameters():
-    xgb_reg_params = {
-        # 'eta':              hp.choice('eta', [0.01, 0.015, 0.025, 0.05, 0.1]),
-        # 'gamma':            hp.choice('gamma', np.concatenate((np.arange(0.05, 0.11, 0.01), [0.3, 0.5, 0.7, 0.9, 1.0]))),
-        # 'max_depth':        hp.choice('max_depth', [3, 5, 7, 9, 12, 15, 17, 25]),
-        # 'min_child_weight': hp.choice('min_child_weight', [1, 3, 5, 7]),
-        # 'subsample':        hp.choice('subsample', np.arange(0.6, 1.0, 0.1)),
-        # 'colsample_bytree': hp.choice('colsample_bytree', np.arange(0.6, 1.0, 0.1)),
-        # 'lambda':           hp.choice('alpha', [0.0, 0.1, 0.5, 1.0]),
+    # Tuning guides:
+    # https://xgboost.readthedocs.io/en/stable/parameter.html
+    # https://www.analyticsvidhya.com/blog/2016/03/complete-guide-parameter-tuning-xgboost-with-codes-python/
 
-        'learning_rate':    hp.choice('learning_rate',    np.arange(0.05, 0.31, 0.05)),
-        'max_depth':        hp.choice('max_depth',        np.arange(5, 16, 1, dtype=int)),
-        'min_child_weight': hp.choice('min_child_weight', np.arange(1, 8, 1, dtype=int)),
-        'colsample_bytree': hp.choice('colsample_bytree', np.arange(0.3, 0.8, 0.1)),
-        'subsample':        hp.uniform('subsample', 0.8, 1),
-        'n_estimators':     100,
+    xgb_reg_params = {
+        'eta':              hp.choice('eta', np.arange(0.05, 0.5, 0.05)),
+        'gamma':            hp.choice('gamma', np.concatenate((np.arange(0.05, 0.11, 0.01), [0.3, 0.5, 0.7, 0.9, 1.0]))),
+        'lambda':           hp.choice('alpha', [0.0, 0.1, 0.5, 1.0]),
+        'max_depth':        hp.choice('max_depth', [3, 5, 7, 9, 12, 15, 17, 25]),
+        'min_child_weight': hp.choice('min_child_weight', np.arange(1, 9, 2, dtype=int)),
+        'colsample_bytree': hp.choice('colsample_bytree', np.arange(0.3, 1.0, 0.1)),
+        'subsample':        hp.uniform('subsample', 0.6, 1),
+        'eval_metric': 'auc'
     }
     xgb_fit_params = {
-        'eval_metric': 'auc',
-        'early_stopping_rounds': 3500,
-        'verbose': False
+        'num_boost_round': 1000,
+        'early_stopping_rounds': 10,
+        'verbose_eval': False
     }
     xgb_para = dict()
     xgb_para['reg_params'] = xgb_reg_params
@@ -39,7 +37,7 @@ def parameters():
 
 def optimize():
     xgb_para = parameters()
-    obj = HyperBoostOptimizer(fn_name='xgb_clf', space=xgb_para)
+    obj = HyperBoostOptimizer(fn_name='crossvalidate_xgboost', space=xgb_para)
     xgb_opt = obj.process(trials=Trials(), algo=tpe.suggest)
     print(xgb_opt)
 

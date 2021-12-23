@@ -9,18 +9,31 @@ from optimizer import HyperBoostOptimizer
 
 
 def parameters():
+    # Tuning guides:
+    # https://lightgbm.readthedocs.io/en/latest/Parameters-Tuning.html
+    # https://towardsdatascience.com/kagglers-guide-to-lightgbm-hyperparameter-tuning-with-optuna-in-2021-ed048d9838b5
+
     lgb_reg_params = {
-        'learning_rate': hp.choice('learning_rate', np.arange(0.05, 0.31, 0.05)),
-        'max_depth': hp.choice('max_depth', np.arange(5, 16, 1, dtype=int)),
+        'n_estimators':  hp.choice('n_estimators', np.arange(100, 10000, 300)),
+        'learning_rate': hp.uniform('learning_rate', 0.01, 0.3),
+        'num_leaves': hp.choice('num_leaves', np.arange(20, 3000, 20)),
+        'max_depth': hp.choice('max_depth', np.arange(3, 12, 1, dtype=int)),
+        "min_data_in_leaf": hp.choice('min_data_in_leaf', np.arange(100, 10000, 300)),
         'min_child_weight': hp.choice('min_child_weight', np.arange(1, 8, 1, dtype=int)),
-        'colsample_bytree': hp.choice('colsample_bytree', np.arange(0.3, 0.8, 0.1)),
-        'subsample': hp.uniform('subsample', 0.8, 1),
-        'n_estimators': 100,
+        'max_bin': hp.choice('max_bin', np.arange(200, 300, 5, dtype=int)),
+        'lambda_l1': hp.choice('lambda_l1', np.arange(0, 100, 5)),
+        'lambda_l2': hp.choice('lambda_l2', np.arange(0, 100, 5)),
+        'min_gain_to_split': hp.uniform('min_gain_to_split', 0, 15),
+        'bagging_fraction': hp.choice('bagging_fraction', np.arange(0.2, 0.95, 0.05)),
+        'bagging_freq': hp.choice('bagging_freq', [1]),
+        'feature_fraction': hp.choice('feature_fraction', np.arange(0.2, 0.95, 0.05))
     }
+
     lgb_fit_params = {
         'eval_metric': 'auc',
         'early_stopping_rounds': 350,
-        'verbose': False
+        'verbose': False,
+        'verbose_eval': False
     }
     lgb_para = dict()
     lgb_para['reg_params'] = lgb_reg_params
@@ -32,7 +45,7 @@ def parameters():
 
 def optimize():
     lgb_para = parameters()
-    obj = HyperBoostOptimizer(fn_name='lgb_clf', space=lgb_para)
+    obj = HyperBoostOptimizer(fn_name='crossvalidate_lighgbm', space=lgb_para)
     lgb_opt = obj.process(trials=Trials(), algo=tpe.suggest)
     print(lgb_opt)
 

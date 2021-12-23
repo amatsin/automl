@@ -6,6 +6,7 @@ import lightgbm as lgb
 from hyperopt import fmin, STATUS_OK, STATUS_FAIL
 from imblearn.over_sampling import RandomOverSampler
 from sklearn.model_selection import StratifiedKFold
+from sklearn import metrics
 
 from dataloader import load_data
 
@@ -45,15 +46,8 @@ class HyperBoostOptimizer(object):
                     'exception': str(e)}
         return result
 
-    def lgb_clf(self, para):
-        clf = lgb.LGBMClassifier(**para['reg_params'])
-        return self.crossvalidate(clf, para)
-
-    def xgb_clf(self, para):
-        clf = xgb.XGBClassifier(**para['reg_params'])
-        return self.crossvalidate(clf, para)
-
-    def crossvalidate(self, clf, para):
+    # todo: remove duplicated crossvalidation code
+    def crossvalidate_xgboost(self, para):
         folds = StratifiedKFold(n_splits=self.NFOLDS, shuffle=True, random_state=self.RANDOM_STATE)
         oof_preds = np.zeros((len(self.X), 1))
 
@@ -63,9 +57,46 @@ class HyperBoostOptimizer(object):
             trn_x, trn_y = sampler.fit_resample(self.X[train_index, :], self.y[train_index])
             val_x, val_y = self.X[valid_index, :], self.y[valid_index]
 
-            clf.fit(trn_x, trn_y, eval_set=[(trn_x, trn_y), (val_x, val_y)], **para['fit_params'])
-            val_pred = clf.predict_proba(val_x)[:, 1]
+            xg_train = xgb.DMatrix(trn_x, trn_y)
+            xg_valid = xgb.DMatrix(val_x, val_y)
 
+            clf = xgb.train(para['reg_params'],
+                            xg_train,
+                            evals=[(xg_train, "train"), (xg_valid, "eval")],
+                            **para['fit_params'])
+
+            val_pred = clf.predict(xgb.DMatrix(val_x))
+
+            print("AUC = {}".format(metrics.roc_auc_score(val_y, val_pred)))
+            oof_preds[valid_index, :] = val_pred.reshape((-1, 1))
+
+        loss = para['loss_func'](self.y, oof_preds.ravel())
+        return {'loss': loss, 'status': STATUS_OK}
+
+    def crossvalidate_lighgbm(self, para):
+        folds = StratifiedKFold(n_splits=self.NFOLDS, shuffle=True, random_state=self.RANDOM_STATE)
+        oof_preds = np.zeros((len(self.X), 1))
+
+        sampler = RandomOverSampler(random_state=self.RANDOM_STATE)
+
+        for fold_, (train_index, valid_index) in enumerate(folds.split(self.y, self.y)):
+            trn_x, trn_y = sampler.fit_resample(self.X[train_index, :], self.y[train_index])
+            val_x, val_y = self.X[valid_index, :], self.y[valid_index]
+
+            trn_data = lgb.Dataset(trn_x, trn_y, silent=True, params={'verbose': -1})
+            val_data = lgb.Dataset(val_x, val_y, silent=True, params={'verbose': -1})
+
+            num_round = 1000000
+            early_stopping_rounds = 3500
+
+            clf = lgb.train(para['reg_params'], trn_data, num_round,
+                            valid_sets=[trn_data, val_data],
+                            verbose_eval=-1,
+                            early_stopping_rounds=early_stopping_rounds)
+
+            val_pred = clf.predict(val_x, num_iteration=clf.best_iteration)
+
+            print("AUC = {}".format(metrics.roc_auc_score(val_y, val_pred)))
             oof_preds[valid_index, :] = val_pred.reshape((-1, 1))
 
         loss = para['loss_func'](self.y, oof_preds.ravel())
