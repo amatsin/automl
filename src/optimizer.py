@@ -7,6 +7,7 @@ from hyperopt import fmin, STATUS_OK, STATUS_FAIL
 from imblearn.over_sampling import RandomOverSampler
 from sklearn.model_selection import StratifiedKFold
 from sklearn import metrics
+from time import time
 
 from dataloader import load_data
 from monitor import inspect_trials
@@ -32,7 +33,10 @@ class HyperBoostOptimizer(object):
 
     def process(self, trials, algo, max_evals):
         try:
+            ts = time()
             result = fmin(fn=self.crossvalidate, space=self.space, algo=algo, trials=trials, max_evals=max_evals)
+            te = time()
+            print('hyperopt took: %2.4f sec' % (te-ts))
         except Exception as e:
             return {'status': STATUS_FAIL,
                     'exception': str(e)}
