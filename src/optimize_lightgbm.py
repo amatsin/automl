@@ -45,7 +45,7 @@ def parameters():
 
 def optimize():
     lgb_para = parameters()
-    obj = HyperBoostOptimizer(fn_name='crossvalidate_lighgbm', space=lgb_para)
+    obj = HyperBoostOptimizer(fn_name='crossvalidate_lightgbm', space=lgb_para)
     lgb_opt = obj.process(trials=Trials(), algo=tpe.suggest)
     print(lgb_opt)
 

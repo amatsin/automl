@@ -73,7 +73,7 @@ class HyperBoostOptimizer(object):
         loss = para['loss_func'](self.y, oof_preds.ravel())
         return {'loss': loss, 'status': STATUS_OK}
 
-    def crossvalidate_lighgbm(self, para):
+    def crossvalidate_lightgbm(self, para):
         folds = StratifiedKFold(n_splits=self.NFOLDS, shuffle=True, random_state=self.RANDOM_STATE)
         oof_preds = np.zeros((len(self.X), 1))
 
