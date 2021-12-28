@@ -37,8 +37,8 @@ def parameters():
 
 def optimize():
     xgb_para = parameters()
-    obj = HyperBoostOptimizer(fn_name='crossvalidate_xgboost', space=xgb_para)
-    xgb_opt = obj.process(trials=Trials(), algo=tpe.suggest)
+    obj = HyperBoostOptimizer(fn_name='xgboost', space=xgb_para)
+    xgb_opt, trials = obj.process(trials=Trials(), algo=tpe.suggest, max_evals=100)
     print(xgb_opt)
 
 

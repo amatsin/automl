@@ -29,12 +29,7 @@ def parameters():
         'feature_fraction': hp.choice('feature_fraction', np.arange(0.2, 0.95, 0.05))
     }
 
-    lgb_fit_params = {
-        'eval_metric': 'auc',
-        'early_stopping_rounds': 350,
-        'verbose': False,
-        'verbose_eval': False
-    }
+    lgb_fit_params = {} # seems that optimize.py is not using this dict for lgbm
     lgb_para = dict()
     lgb_para['reg_params'] = lgb_reg_params
     lgb_para['fit_params'] = lgb_fit_params
@@ -45,8 +40,8 @@ def parameters():
 
 def optimize():
     lgb_para = parameters()
-    obj = HyperBoostOptimizer(fn_name='crossvalidate_lightgbm', space=lgb_para)
-    lgb_opt = obj.process(trials=Trials(), algo=tpe.suggest)
+    obj = HyperBoostOptimizer(fn_name='lightgbm', space=lgb_para)
+    lgb_opt, trials = obj.process(trials=Trials(), algo=tpe.suggest, max_evals=100)
     print(lgb_opt)
 
 
