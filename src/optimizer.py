@@ -9,7 +9,7 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn import metrics
 
 from dataloader import load_data
-from src.monitor import inspect_trials
+from monitor import inspect_trials
 
 
 def prepare_data():
