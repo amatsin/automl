@@ -5,6 +5,7 @@ from tqdm.auto import tqdm
 
 
 def scale_data(train, test):
+    print('Scaling data...')
     X_train = train.drop(['ID_code', 'target'], axis=1)
     X_columns = X_train.columns
     X_test = test.drop(['ID_code'], axis=1)
@@ -18,6 +19,20 @@ def scale_data(train, test):
     test[X_columns] = X_test
 
     return train, test
+
+
+def scale_data_train(train):
+    print('Scaling data...')
+    X_train = train.drop(['ID_code', 'target'], axis=1)
+    X_columns = X_train.columns
+
+    scaler = StandardScaler()
+    scaler.fit(X_train)
+    X_train = scaler.transform(X_train)
+
+    train[X_columns] = X_train
+
+    return train
 
 
 def remove_synthetic(test):
@@ -43,6 +58,7 @@ def remove_synthetic(test):
 
 
 def frequency_encoding(train, test):
+    print('Frequency encoding...')
     # Code taken from : https://www.kaggle.com/ilu000/simplistic-magic-lgbmv
 
     idx = [c for c in train.columns if c not in ['ID_code', 'target']]
@@ -60,17 +76,35 @@ def frequency_encoding(train, test):
     return train_df, test_df
 
 
-def load_data(scale=True):
-    print("Reading training data")
-    train = pd.read_csv('../input/santander-customer-transaction-prediction/train.csv')
+def frequency_encoding_train(train):
+    print('Frequency encoding...')
+    # Code taken from : https://www.kaggle.com/ilu000/simplistic-magic-lgbmv
+    idx = [c for c in train.columns if c not in ['ID_code', 'target']]
+    train_df = train.copy()
+    for col in idx:
+        train_df[col + '_freq'] = train[col].map(train.groupby(col).size())
+        train_df = train_df.copy()
+
+    print('Train shape:', train_df.shape)
+    return train_df
+
+
+def load_data(scale=True, load_test=True, n_train_rows=None):
+    print("Reading training data...")
+    train = pd.read_csv('../input/santander-customer-transaction-prediction/train.csv')[:n_train_rows]
     print("Train length: ", len(train))
 
-    test = pd.read_csv('../input/santander-customer-transaction-prediction/test.csv')
-    train, test = frequency_encoding(train, test)
+    if load_test:
+        print("Loading test...")
+        test = pd.read_csv('../input/santander-customer-transaction-prediction/test.csv')
+        train, test = frequency_encoding(train, test)
+        test = remove_synthetic(test)
+        print("Test length: ", len(test))
+        if scale:
+            train, test = scale_data(train, test)
+        return train, test
 
-    test = remove_synthetic(test)
-    print("Test length: ", len(test))
+    train = frequency_encoding_train(train)
     if scale:
-        train, test = scale_data(train, test)
-
-    return train, test
+        train = scale_data_train(train)
+    return train

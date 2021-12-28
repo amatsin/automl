@@ -14,7 +14,7 @@ from monitor import inspect_trials
 
 
 def prepare_data():
-    train, test = load_data()
+    train = load_data(load_test=False)
     y = train.target.values
     train = train.drop(['ID_code', 'target'], axis=1)
     X = train.values.astype(float)
@@ -82,6 +82,7 @@ class HyperBoostOptimizer(object):
         return clf.predict(val_x, num_iteration=clf.best_iteration)
 
     def find_baseline_loss(self):
+        print('Finding baseline loss...')
         this_para = copy(self.space)
         this_para['reg_params'] = dict()
         baseline_loss = self.crossvalidate(this_para)['loss']
