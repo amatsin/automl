@@ -50,6 +50,7 @@ def frequency_encoding(train, test):
     traintest = traintest.reset_index(drop=True)
 
     for col in idx:
+        traintest = traintest.copy()
         traintest[col + '_freq'] = traintest[col].map(traintest.groupby(col).size())
 
     train_df = traintest[:len(train)]
@@ -62,10 +63,10 @@ def frequency_encoding(train, test):
 
 def load_data(scale=True):
     print("Reading training data")
-    train = pd.read_csv('../input/santander-customer-transaction-prediction/train.csv')
+    train = pd.read_csv('../input/santander-customer-transaction-prediction/train.csv')[:200]
     print("Train length: ", len(train))
 
-    test = pd.read_csv('../input/santander-customer-transaction-prediction/test.csv')
+    test = pd.read_csv('../input/santander-customer-transaction-prediction/test.csv')[:200]
     train, test = frequency_encoding(train, test)
 
     test = remove_synthetic(test)

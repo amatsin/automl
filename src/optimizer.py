@@ -29,22 +29,17 @@ class HyperBoostOptimizer(object):
         self.X, self.y = prepare_data()
         self.baseline_loss = self.find_baseline_loss()
 
-    def early_stop_fn(self, trials, *args):
-        last_result = trials.results[-1]
-        if last_result['status'] != 'ok':
-            return True, args
-        if last_result['loss'] < self.baseline_loss:
-            print(f'Reached better result {last_result["loss"]} than baseline {self.baseline_loss} in {len(trials.results)} trials')
-            return True, args
-        return False, args
+    def save_trials(self, trials):
+        pass
 
-    def process(self, trials, algo):
+    def process(self, trials, algo, max_evals):
         try:
-            result = fmin(fn=self.crossvalidate, space=self.space, algo=algo, trials=trials, early_stop_fn=self.early_stop_fn)
+            result = fmin(fn=self.crossvalidate, space=self.space, algo=algo, trials=trials, max_evals=max_evals)
         except Exception as e:
             return {'status': STATUS_FAIL,
                     'exception': str(e)}
-        return result
+        self.save_trials(trials)
+        return result, trials
 
     def crossvalidate(self, para):
         folds = StratifiedKFold(n_splits=self.NFOLDS, shuffle=True, random_state=self.RANDOM_STATE)
@@ -58,7 +53,7 @@ class HyperBoostOptimizer(object):
 
             val_pred = self.fn(para, trn_x, trn_y, val_x, val_y)
 
-            print("AUC = {}".format(metrics.roc_auc_score(val_y, val_pred)))
+            print(f"AUC = {metrics.roc_auc_score(val_y, val_pred)}")
             oof_preds[valid_index, :] = val_pred.reshape((-1, 1))
 
         loss = para['loss_func'](self.y, oof_preds.ravel())
@@ -71,8 +66,7 @@ class HyperBoostOptimizer(object):
                         trn_data,
                         evals=[(trn_data, "train"), (val_data, "eval")],
                         **para['fit_params'])
-        val_pred = clf.predict(xgb.DMatrix(val_x))
-        return val_pred
+        return clf.predict(xgb.DMatrix(val_x))
 
     def crossvalidate_lightgbm(self, para, trn_x, trn_y, val_x, val_y):
         trn_data = lgb.Dataset(trn_x, trn_y, silent=True, params={'verbose': -1})
@@ -81,10 +75,9 @@ class HyperBoostOptimizer(object):
         early_stopping_rounds = 3500
         clf = lgb.train(para['reg_params'], trn_data, num_round,
                         valid_sets=[trn_data, val_data],
-                        verbose_eval=-1,
+                        verbose_eval=False,
                         early_stopping_rounds=early_stopping_rounds)
-        val_pred = clf.predict(val_x, num_iteration=clf.best_iteration)
-        return val_pred
+        return clf.predict(val_x, num_iteration=clf.best_iteration)
 
     def find_baseline_loss(self):
         this_para = copy(self.space)
