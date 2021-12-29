@@ -18,7 +18,7 @@ def parameters():
         'num_leaves': hp.uniformint('num_leaves', 20, 3000),
         'max_depth': hp.uniformint('max_depth', 3, 12),
         "min_data_in_leaf": hp.uniformint('min_data_in_leaf', 100, 10000),
-        'min_child_weight': hp.uniform('min_child_weight', 0.001, 0.1), # TODO: Default is actually 0.01 in https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMClassifier.html?highlight=LGBMClassifier
+        'min_child_weight': hp.uniform('min_child_weight', 0.001, 0.1), # Default is 0.01 in https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMClassifier.html?highlight=LGBMClassifier
         'max_bin': hp.uniformint('max_bin', 200, 300),
         'lambda_l1': hp.uniform('lambda_l1', 0, 100),
         'lambda_l2': hp.uniform('lambda_l2', 0, 100),
@@ -45,7 +45,7 @@ def parameters():
 def optimize():
     lgb_para = parameters()
     obj = HyperBoostOptimizer(fn_name='lightgbm', space=lgb_para)
-    lgb_opt, trials = obj.process(trials=Trials(), algo=tpe.suggest, max_evals=1000)
+    lgb_opt, trials = obj.process(algo=tpe.suggest, max_evals=1000)
     print(lgb_opt)
     return trials
 
