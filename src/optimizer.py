@@ -15,7 +15,7 @@ from monitor import Monitor
 
 
 def prepare_data():
-    train = load_data(load_test=False, n_train_rows=100) # set n_train_rows=100 for fast test iterations
+    train = load_data(load_test=False) # set n_train_rows=100 for fast test iterations
     y = train.target.values
     train = train.drop(['ID_code', 'target'], axis=1)
     X = train.values.astype(float)
