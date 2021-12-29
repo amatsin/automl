@@ -80,10 +80,12 @@ class HyperBoostOptimizer(object):
         val_data = lgb.Dataset(val_x, val_y, silent=True, params={'verbose': -1})
         num_round = 1000000
         early_stopping_rounds = 3500
+        para['reg_params']['force_col_wise'] = True
         clf = lgb.train(para['reg_params'], trn_data, num_round,
                         valid_sets=[trn_data, val_data],
                         verbose_eval=False,
-                        early_stopping_rounds=early_stopping_rounds)
+                        early_stopping_rounds=early_stopping_rounds,
+                        )
         return clf.predict(val_x, num_iteration=clf.best_iteration)
 
     def find_baseline_loss(self):
