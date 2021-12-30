@@ -16,7 +16,6 @@ from imblearn.over_sampling import RandomOverSampler
 
 
 def run():
-    global sample, sample
     NFOLDS = 5
     RANDOM_STATE = 42
     script_name = os.path.basename(__file__).split('.')[0]
@@ -83,6 +82,14 @@ def run():
     test_preds /= NFOLDS
     roc_score = metrics.roc_auc_score(y, oof_preds.ravel())
     print("Overall AUC = {}".format(roc_score))
+
+    print("Saving submission file")
+    sample = pd.read_csv('../input/santander-customer-transaction-prediction/sample_submission.csv')
+    sample.target = test_preds.astype(float)
+    sample.ID_code = test_ids
+    sample.to_csv('../model_predictions/submission_{}__{}.csv'.format(MODEL_NAME,
+                                                                      str(roc_score)), index=False)
+
     print("Saving OOF predictions")
     oof_preds = pd.DataFrame(np.column_stack((train_ids,
                                               oof_preds.ravel())), columns=['ID_code', 'target'])
@@ -90,12 +97,6 @@ def run():
     print("Saving code to reproduce")
     shutil.copyfile(os.path.basename(__file__),
                     '../model_source/{}__{}.py'.format(MODEL_NAME, str(roc_score)))
-    print("Saving submission file")
-    sample = pd.read_csv('../input/santander-customer-transaction-prediction/sample_submission.csv')
-    sample.target = test_preds.astype(float)
-    sample.ID_code = test_ids
-    sample.to_csv('../model_predictions/submission_{}__{}.csv'.format(MODEL_NAME,
-                                                                      str(roc_score)), index=False)
 
 
 if __name__ == "__main__":
