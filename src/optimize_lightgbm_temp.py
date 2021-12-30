@@ -45,9 +45,8 @@ def parameters():
 def optimize():
     lgb_para = parameters()
     obj = HyperBoostOptimizer(fn_name='lightgbm', space=lgb_para)
-    lgb_opt, trials = obj.process(algo=tpe.suggest, max_evals=1000)
+    lgb_opt = obj.process(algo=tpe.suggest, max_evals=1000)
     print(lgb_opt)
-    return trials
 
 
 if __name__ == "__main__":
