@@ -17,7 +17,7 @@ def run():
     script_name = os.path.basename(__file__).split('.')[0]
     MODEL_NAME = "{0}".format(script_name)
     print("Model: {}".format(MODEL_NAME))
-    train, test = load_data(remove_synth=False, n_train_rows=100)
+    train, test = load_data(remove_synth=False)
     y = train.target.values
     train = train.drop(['ID_code', 'target'], axis=1)
     feature_list = train.columns
