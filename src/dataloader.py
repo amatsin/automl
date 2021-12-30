@@ -89,7 +89,7 @@ def frequency_encoding_train(train):
     return train_df
 
 
-def load_data(scale=True, load_test=True, n_train_rows=None):
+def load_data(scale=True, load_test=True, n_train_rows=None, remove_synth=True):
     print("Reading training data...")
     train = pd.read_csv('../input/santander-customer-transaction-prediction/train.csv')[:n_train_rows]
     print("Train length: ", len(train))
@@ -98,7 +98,8 @@ def load_data(scale=True, load_test=True, n_train_rows=None):
         print("Loading test...")
         test = pd.read_csv('../input/santander-customer-transaction-prediction/test.csv')
         train, test = frequency_encoding(train, test)
-        test = remove_synthetic(test)
+        if remove_synth:
+            test = remove_synthetic(test)
         print("Test length: ", len(test))
         if scale:
             train, test = scale_data(train, test)
