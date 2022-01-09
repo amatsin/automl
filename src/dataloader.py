@@ -3,7 +3,6 @@ from sklearn.preprocessing import StandardScaler
 import numpy as np
 from tqdm.auto import tqdm
 
-
 def scale_data(train, test):
     print('Scaling data...')
     X_train = train.drop(['ID_code', 'target'], axis=1)
@@ -12,6 +11,9 @@ def scale_data(train, test):
 
     scaler = StandardScaler()
     scaler.fit(X_train)
+    print(X_train.shape)
+    print(X_test.shape)
+    
     X_train = scaler.transform(X_train)
     X_test = scaler.transform(X_test)
 
@@ -19,7 +21,6 @@ def scale_data(train, test):
     test[X_columns] = X_test
 
     return train, test
-
 
 def scale_data_train(train):
     print('Scaling data...')
@@ -33,7 +34,6 @@ def scale_data_train(train):
     train[X_columns] = X_train
 
     return train
-
 
 def remove_synthetic(test):
     # Code taken from: https://www.kaggle.com/yag320/list-of-fake-samples-and-public-private-lb-split
@@ -54,10 +54,10 @@ def remove_synthetic(test):
     print(f'real_samples_indexes {len(real_samples_indexes)}')
     print(f'synthetic_samples_indexes {len(synthetic_samples_indexes)}')
 
-    return test.iloc[~test.index.isin(synthetic_samples_indexes)]
+    return test.iloc[~test.index.isin(synthetic_samples_indexes)], test.iloc[test.index.isin(synthetic_samples_indexes)]
 
 
-def frequency_encoding(train, test):
+def frequency_encoding(train, test, synth_rows = []):
     print('Frequency encoding...')
     # Code taken from : https://www.kaggle.com/ilu000/simplistic-magic-lgbmv
 
@@ -72,9 +72,12 @@ def frequency_encoding(train, test):
     test_df = traintest[len(train):]
     test_df = test_df.drop(['target'], axis=1)
 
+    if len(synth_rows):
+        test_df = pd.concat([synth_rows, test_df], axis=0, ignore_index=True)
+        test_df = test_df.fillna(0)
+
     print('Train and test shape:', train_df.shape, test_df.shape)
     return train_df, test_df
-
 
 def frequency_encoding_train(train):
     print('Frequency encoding...')
@@ -97,9 +100,13 @@ def load_data(scale=True, load_test=True, n_train_rows=None, remove_synth=True):
     if load_test:
         print("Loading test...")
         test = pd.read_csv('../input/santander-customer-transaction-prediction/test.csv')
-        train, test = frequency_encoding(train, test)
+        
         if remove_synth:
-            test = remove_synthetic(test)
+            test_synth_removed, test_synth = remove_synthetic(test)
+            train, test = frequency_encoding(train, test_synth_removed, test_synth)
+        else:
+            train, test = frequency_encoding(train, test)
+        
         print("Test length: ", len(test))
         if scale:
             train, test = scale_data(train, test)
