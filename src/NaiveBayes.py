@@ -41,11 +41,10 @@ for fold_, (trn_, val_) in enumerate(folds.split(y, y)):
     val_x, val_y = X[val_, :], y[val_]
 
     gnb = GaussianNB()
-
     gnb.fit(trn_x, trn_y)
 
-    val_pred = gnb.predict(val_x)
-    test_fold_pred = gnb.predict(X_test)
+    val_pred = gnb.predict_proba(val_x)[:, 1]
+    test_fold_pred = gnb.predict_proba(X_test)[:, 1]
 
     print("AUC = {}".format(metrics.roc_auc_score(val_y, val_pred)))
     oof_preds[val_, :] = val_pred.reshape((-1, 1))

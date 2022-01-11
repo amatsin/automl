@@ -3,7 +3,9 @@ import shutil
 
 import numpy as np
 import pandas as pd
+from sklearn import metrics
 from sklearn.model_selection import StratifiedKFold
+from sklearn.tree import ExtraTreeClassifier
 
 from dataloader import load_data
 
@@ -34,9 +36,6 @@ folds = StratifiedKFold(n_splits=NFOLDS, shuffle=True, random_state=RANDOM_STATE
 oof_preds = np.zeros((len(train), 1))
 test_preds = np.zeros((len(test), 1))
 
-from sklearn.tree import ExtraTreeClassifier
-from sklearn import metrics
-
 for fold_, (trn_, val_) in enumerate(folds.split(y, y)):
     print("Current Fold: {}".format(fold_))
     trn_x, trn_y = X[trn_, :], y[trn_]
@@ -46,8 +45,8 @@ for fold_, (trn_, val_) in enumerate(folds.split(y, y)):
 
     clf.fit(trn_x, trn_y)
 
-    val_pred = clf.predict(val_x)
-    test_fold_pred = clf.predict(X_test)
+    val_pred = clf.predict_proba(val_x)[:, 1]
+    test_fold_pred = clf.predict_proba(X_test)[:, 1]
 
     print("AUC = {}".format(metrics.roc_auc_score(val_y, val_pred)))
     oof_preds[val_, :] = val_pred.reshape((-1, 1))

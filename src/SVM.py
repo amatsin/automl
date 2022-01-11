@@ -43,8 +43,8 @@ for fold_, (trn_, val_) in enumerate(folds.split(y, y)):
 
     clf = svm.SVC(gamma="scale").fit(trn_x, trn_y)
 
-    val_pred = clf.predict(val_x)
-    test_fold_pred = clf.predict(X_test)
+    val_pred = clf.decision_function(val_x)
+    test_fold_pred = clf.decision_function(X_test)
 
     print("AUC = {}".format(metrics.roc_auc_score(val_y, val_pred)))
     oof_preds[val_, :] = val_pred.reshape((-1, 1))
