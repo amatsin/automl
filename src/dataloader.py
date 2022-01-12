@@ -1,7 +1,68 @@
-import pandas as pd
-from sklearn.preprocessing import StandardScaler
+import pickle
+
 import numpy as np
+import pandas as pd
+from autofeat import AutoFeatClassifier
+from sklearn.preprocessing import StandardScaler
 from tqdm.auto import tqdm
+
+
+def load_data(scale=True, load_test=True, n_train_rows=None, remove_synth=True, autofeat_transform=False):
+    print("Reading training data...")
+    original_train = pd.read_csv('../input/santander-customer-transaction-prediction/train.csv')[:n_train_rows]
+    print("Original train length: ", len(original_train))
+
+    if load_test:
+        return load_with_test(remove_synth, scale, original_train, autofeat_transform=autofeat_transform)
+
+    freq_enc_train_features = frequency_encoding_train(original_train)
+
+    if autofeat_transform:
+        train = pd.concat([add_autofeat_features(original_train), freq_enc_train_features], axis=1)
+    else:
+        train = pd.concat([original_train(original_train), freq_enc_train_features], axis=1)
+
+    if scale:
+        train = scale_data_train(train)
+
+    return train
+
+
+def load_with_test(remove_synth, scale, original_train, autofeat_transform=False):
+    print("Loading test...")
+    original_test = pd.read_csv('../input/santander-customer-transaction-prediction/test.csv')
+    if remove_synth:
+        test_synth_removed, test_synth = remove_synthetic(original_test)
+        freq_enc_train_features, freq_enc_test_features = frequency_encoding(original_train, test_synth_removed, test_synth)
+    else:
+        freq_enc_train_features, freq_enc_test_features = frequency_encoding(original_train, original_test)
+
+    if autofeat_transform:
+        train = pd.concat([add_autofeat_features(original_train), freq_enc_train_features], axis=1)
+        test = pd.concat([add_autofeat_features(original_test), freq_enc_test_features], axis=1)
+    else:
+        train = pd.concat([original_train, freq_enc_train_features], axis=1)
+        test = pd.concat([original_test, freq_enc_test_features], axis=1)
+
+    print("Test length: ", len(test))
+    if scale:
+        train, test = scale_data(train, test)
+    return train, test
+
+
+def add_autofeat_features(X):
+    """
+    Inputs:
+        - X: pandas dataframe or numpy array with original features (n_datapoints x n_features)
+    Returns:
+        - new_df: new pandas dataframe with all the original features (except categorical features transformed
+                  into multiple 0/1 columns) and the most promising engineered features.
+    """
+    train = X.drop(['ID_code', 'target'], axis=1)
+    with open('autofeat_class.pickle', mode='rb') as fp:
+            autofeat_transformer: AutoFeatClassifier = pickle.load(fp)
+    return autofeat_transformer.transform(train)
+
 
 def scale_data(train, test):
     print('Scaling data...')
@@ -13,7 +74,7 @@ def scale_data(train, test):
     scaler.fit(X_train)
     print(X_train.shape)
     print(X_test.shape)
-    
+
     X_train = scaler.transform(X_train)
     X_test = scaler.transform(X_test)
 
@@ -21,6 +82,7 @@ def scale_data(train, test):
     test[X_columns] = X_test
 
     return train, test
+
 
 def scale_data_train(train):
     print('Scaling data...')
@@ -34,6 +96,7 @@ def scale_data_train(train):
     train[X_columns] = X_train
 
     return train
+
 
 def remove_synthetic(test):
     # Code taken from: https://www.kaggle.com/yag320/list-of-fake-samples-and-public-private-lb-split
@@ -57,7 +120,7 @@ def remove_synthetic(test):
     return test.iloc[~test.index.isin(synthetic_samples_indexes)], test.iloc[test.index.isin(synthetic_samples_indexes)]
 
 
-def frequency_encoding(train, test, synth_rows = []):
+def frequency_encoding(train, test, synth_rows=[]):
     print('Frequency encoding...')
     # Code taken from : https://www.kaggle.com/ilu000/simplistic-magic-lgbmv
 
@@ -65,11 +128,12 @@ def frequency_encoding(train, test, synth_rows = []):
     traintest = pd.concat([train, test])
     traintest = traintest.reset_index(drop=True)
 
+    traintest_new = pd.DataFrame()
     for col in idx:
-        traintest[col + '_freq'] = traintest[col].map(traintest.groupby(col).size())
+        traintest_new[col + '_freq'] = traintest[col].map(traintest.groupby(col).size())
 
-    train_df = traintest[:len(train)]
-    test_df = traintest[len(train):]
+    train_df = traintest_new[:len(train)]
+    test_df = traintest_new[len(train):]
     test_df = test_df.drop(['target'], axis=1)
 
     if len(synth_rows):
@@ -79,40 +143,15 @@ def frequency_encoding(train, test, synth_rows = []):
     print('Train and test shape:', train_df.shape, test_df.shape)
     return train_df, test_df
 
+
 def frequency_encoding_train(train):
     print('Frequency encoding...')
     # Code taken from : https://www.kaggle.com/ilu000/simplistic-magic-lgbmv
     idx = [c for c in train.columns if c not in ['ID_code', 'target']]
-    train_df = train.copy()
+    train_df = pd.DataFrame()
     for col in idx:
         train_df[col + '_freq'] = train[col].map(train.groupby(col).size())
         train_df = train_df.copy()
 
-    print('Train shape:', train_df.shape)
+    print('Only frequency encoding features df shape:', train_df.shape)
     return train_df
-
-
-def load_data(scale=True, load_test=True, n_train_rows=None, remove_synth=True):
-    print("Reading training data...")
-    train = pd.read_csv('../input/santander-customer-transaction-prediction/train.csv')[:n_train_rows]
-    print("Train length: ", len(train))
-
-    if load_test:
-        print("Loading test...")
-        test = pd.read_csv('../input/santander-customer-transaction-prediction/test.csv')
-        
-        if remove_synth:
-            test_synth_removed, test_synth = remove_synthetic(test)
-            train, test = frequency_encoding(train, test_synth_removed, test_synth)
-        else:
-            train, test = frequency_encoding(train, test)
-        
-        print("Test length: ", len(test))
-        if scale:
-            train, test = scale_data(train, test)
-        return train, test
-
-    train = frequency_encoding_train(train)
-    if scale:
-        train = scale_data_train(train)
-    return train

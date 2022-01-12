@@ -1,4 +1,3 @@
-import pickle
 from copy import copy
 from datetime import datetime
 from time import time
@@ -6,7 +5,6 @@ from time import time
 import lightgbm as lgb
 import numpy as np
 import xgboost as xgb
-from autofeat import AutoFeatRegressor
 from hyperopt import fmin, STATUS_OK
 from imblearn.over_sampling import RandomOverSampler
 from sklearn import metrics
@@ -17,15 +15,10 @@ from monitor import Monitor
 
 
 def prepare_data(autofeat_transform=False):
-    train = load_data(load_test=False, n_train_rows=100)  # set n_train_rows=100 for fast test iterations
+    train = load_data(load_test=False, n_train_rows=100, autofeat_transform=autofeat_transform)  # set n_train_rows=100 for fast test iterations
     y = train.target.values
     train = train.drop(['ID_code', 'target'], axis=1)
     X = train.values.astype(float)
-    if autofeat_transform:
-        with open('autofeat_regressor.pickle', mode='rb') as fp:
-            autofeat_transformer: AutoFeatRegressor = pickle.load(fp)
-            autofeat_transformer.always_return_numpy = True
-        X = autofeat_transformer.transform(X)
     return X, y
 
 
