@@ -4,6 +4,7 @@
 # Sklearn environment
 conda create -n santander -c conda-forge scikit-learn xgboost lightgbm catboost imbalanced-learn pandas six hyperopt python=3.8
 conda activate santander
+pip install autofeat
 ```
 
 ## Install Kaggle API
