@@ -1,8 +1,10 @@
 import os
 import shutil
 
+import catboost as cb
 import numpy as np
 import pandas as pd
+from sklearn import metrics
 from sklearn.model_selection import StratifiedKFold
 
 from dataloader import load_data
@@ -33,9 +35,6 @@ clfs = []
 folds = StratifiedKFold(n_splits=NFOLDS, shuffle=True, random_state=RANDOM_STATE)
 oof_preds = np.zeros((len(train), 1))
 test_preds = np.zeros((len(test), 1))
-
-import catboost as cb
-from sklearn import metrics
 
 for fold_, (trn_, val_) in enumerate(folds.split(y, y)):
     print("Current Fold: {}".format(fold_))
