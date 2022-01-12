@@ -36,13 +36,6 @@ def run():
     oof_preds = np.zeros((len(train), 1))
     test_preds = np.zeros((len(test), 1))
     params = {
-        "alpha": 0.6763306576868031,
-        "colsample_bytree": 0.9781695650765355,
-        "eta": 0.08258822790738427,
-        "gamma": 0.5522919248987054,
-        "max_depth": 3,
-        "min_child_weight": 6,
-        "subsample": 0.8225789960827787,
         "eval_metric": "auc",
     }
     ITERATIONS = 1000
