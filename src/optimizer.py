@@ -1,24 +1,31 @@
+import pickle
 from copy import copy
 from datetime import datetime
+from time import time
 
+import lightgbm as lgb
 import numpy as np
 import xgboost as xgb
-import lightgbm as lgb
+from autofeat import AutoFeatRegressor
 from hyperopt import fmin, STATUS_OK
 from imblearn.over_sampling import RandomOverSampler
-from sklearn.model_selection import StratifiedKFold
 from sklearn import metrics
-from time import time
+from sklearn.model_selection import StratifiedKFold
 
 from dataloader import load_data
 from monitor import Monitor
 
 
-def prepare_data():
-    train = load_data(load_test=False) # set n_train_rows=100 for fast test iterations
+def prepare_data(autofeat_transform=False):
+    train = load_data(load_test=False, n_train_rows=100)  # set n_train_rows=100 for fast test iterations
     y = train.target.values
     train = train.drop(['ID_code', 'target'], axis=1)
     X = train.values.astype(float)
+    if autofeat_transform:
+        with open('autofeat_regressor.pickle', mode='rb') as fp:
+            autofeat_transformer: AutoFeatRegressor = pickle.load(fp)
+            autofeat_transformer.always_return_numpy = True
+        X = autofeat_transformer.transform(X)
     return X, y
 
 
@@ -26,10 +33,10 @@ class HyperBoostOptimizer(object):
     NFOLDS = 5
     RANDOM_STATE = 42
 
-    def __init__(self, fn_name, space):
+    def __init__(self, fn_name, space, autofeat_transform=False):
         self.fn = getattr(self, fn_name)
         self.space = space
-        self.X, self.y = prepare_data()
+        self.X, self.y = prepare_data(autofeat_transform)
         self.baseline_loss = self.find_baseline_loss()
         self.filename = f'{fn_name}_at_{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'
         self.monitor = Monitor(self.baseline_loss, self.filename)
