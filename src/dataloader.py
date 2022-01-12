@@ -2,7 +2,7 @@ import pickle
 
 import numpy as np
 import pandas as pd
-from autofeat import AutoFeatClassifier
+from autofeat import AutoFeatRegressor
 from sklearn.preprocessing import StandardScaler
 from tqdm.auto import tqdm
 
@@ -50,7 +50,7 @@ def load_with_test(remove_synth, scale, original_train, autofeat_transform=False
     return train, test
 
 
-def add_autofeat_features(X):
+def add_autofeat_features(data):
     """
     Inputs:
         - X: pandas dataframe or numpy array with original features (n_datapoints x n_features)
@@ -58,10 +58,11 @@ def add_autofeat_features(X):
         - new_df: new pandas dataframe with all the original features (except categorical features transformed
                   into multiple 0/1 columns) and the most promising engineered features.
     """
-    train = X.drop(['ID_code', 'target'], axis=1)
-    with open('autofeat_class.pickle', mode='rb') as fp:
-            autofeat_transformer: AutoFeatClassifier = pickle.load(fp)
-    return autofeat_transformer.transform(train)
+    with open('autofeat_regressor.pickle', mode='rb') as fp:
+            autofeat_transformer: AutoFeatRegressor = pickle.load(fp)
+    with_original_and_new_features = autofeat_transformer.transform(
+        data.drop(['ID_code', 'target'], axis=1).values.astype(float))
+    return pd.concat([with_original_and_new_features, data.ID_code, data.target], axis=1)
 
 
 def scale_data(train, test):
@@ -101,7 +102,7 @@ def scale_data_train(train):
 def remove_synthetic(test):
     # Code taken from: https://www.kaggle.com/yag320/list-of-fake-samples-and-public-private-lb-split
     print("Removing synthetic data from test")
-    df_test = test.drop(['ID_code'], axis=1)
+    df_test = test.drop(['ID_code'], axis=1, errors='ignore')
 
     df_test = df_test.values
 
@@ -134,7 +135,7 @@ def frequency_encoding(train, test, synth_rows=[]):
 
     train_df = traintest_new[:len(train)]
     test_df = traintest_new[len(train):]
-    test_df = test_df.drop(['target'], axis=1)
+    test_df = test_df.drop(['target'], axis=1, errors='ignore')
 
     if len(synth_rows):
         test_df = pd.concat([synth_rows, test_df], axis=0, ignore_index=True)
