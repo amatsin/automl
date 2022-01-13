@@ -15,7 +15,7 @@ def load_data(scale=True, n_train_rows=None, autofeat_transform=False):
     if autofeat_transform:
         train = pd.concat([add_autofeat_features(original_train), freq_enc_train_features], axis=1)
     else:
-        train = pd.concat([original_train(original_train), freq_enc_train_features], axis=1)
+        train = pd.concat([original_train, freq_enc_train_features], axis=1)
 
     if scale:
         train = scale_data(train)
