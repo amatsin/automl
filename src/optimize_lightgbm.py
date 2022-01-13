@@ -7,6 +7,7 @@ from sklearn.metrics import roc_auc_score
 
 from optimizer import HyperBoostOptimizer
 
+RANDOM_STATE = 42
 
 def parameters():
     # Tuning guides:
@@ -26,7 +27,16 @@ def parameters():
         'min_gain_to_split': hp.uniform('min_gain_to_split', 0, 15),
         'bagging_fraction': hp.uniform('bagging_fraction', 0.2, 0.95),
         'bagging_freq': hp.choice('bagging_freq', [1]),
-        'feature_fraction': hp.uniform('feature_fraction', 0.2, 0.95)
+        'feature_fraction': hp.uniform('feature_fraction', 0.2, 0.95),
+
+        'objective': 'binary',
+        'force_col_wise': True,
+        'metric': 'auc',
+        'seed': RANDOM_STATE,
+        'feature_fraction_seed': RANDOM_STATE,
+        'bagging_seed': RANDOM_STATE,
+        'drop_seed': RANDOM_STATE,
+        'data_random_seed': RANDOM_STATE,
     }
 
     lgb_fit_params = {
