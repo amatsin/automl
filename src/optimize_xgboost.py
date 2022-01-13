@@ -1,3 +1,4 @@
+import argparse
 import warnings
 
 import numpy as np
@@ -35,13 +36,16 @@ def parameters():
     return xgb_para
 
 
-def optimize():
+def optimize(args: argparse.Namespace):
     xgb_para = parameters()
-    obj = HyperBoostOptimizer(fn_name='xgboost', space=xgb_para)
+    obj = HyperBoostOptimizer(fn_name='xgboost', space=xgb_para, autofeat_transform=args.autofeat)
     xgb_opt = obj.process(algo=tpe.suggest, max_evals=1000)
     print(xgb_opt)
 
 
 if __name__ == "__main__":
     warnings.filterwarnings("ignore")  # to avoid deprecation warning every iteration
-    optimize()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--autofeat", type=bool, default=False)
+    args = parser.parse_args()
+    optimize(args)
