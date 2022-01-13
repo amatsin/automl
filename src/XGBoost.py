@@ -33,7 +33,8 @@ def run():
     oof_preds = np.zeros((len(train), 1))
     params = {
         'objective': 'binary:logistic',
-        'eval_metric': 'auc'
+        'eval_metric': 'auc',
+        'tree_method': 'hist'
     }
 
     ITERATIONS = 4000

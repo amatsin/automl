@@ -15,15 +15,15 @@ def parameters():
 
     xgb_reg_params = {
         'eta':              hp.uniform('eta', 0.05, 0.5),
-        'tree_method':      hp.choice('tree_method', ['exact', 'approx', 'hist']),
         'gamma':            hp.choice('gamma', [hp.uniform('gamma_1', 0.05, 0.11), hp.uniform('gamma_2', 0.3, 1.0)]),
         'lambda':           hp.uniform('alpha', 0.0, 1.0),
         'max_depth':        hp.uniformint('max_depth', 2, 25),
         'min_child_weight': hp.uniformint('min_child_weight', 1, 75),
         'colsample_bytree': hp.uniform('colsample_bytree', 0.3, 1.0),
         'subsample':        hp.uniform('subsample', 0.6, 1),
-        'eval_metric': 'auc',
-        'objective': 'binary:logistic'
+        'eval_metric':      'auc',
+        'objective':        'binary:logistic',
+        'tree_method':      'hist',
     }
 
     xgb_fit_params = {

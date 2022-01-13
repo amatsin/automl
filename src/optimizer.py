@@ -93,7 +93,7 @@ class HyperBoostOptimizer(object):
 
         # Constant parameters used also for baseline and should not be removed
         params_to_keep = ['eval_metric', 'objective', 'seed', 'feature_fraction_seed', 'bagging_seed', 'drop_seed',
-                          'data_random_seed']
+                          'data_random_seed', 'tree_method']
 
         reg_params = this_para['reg_params']
         this_para['reg_params'] = {k: reg_params[k] for k in params_to_keep if k in reg_params}
