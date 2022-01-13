@@ -5,7 +5,7 @@ import warnings
 import lightgbm as lgb
 import numpy as np
 import pandas as pd
-from imblearn.over_sampling import SMOTE, RandomOverSampler
+from imblearn.over_sampling import RandomOverSampler
 from sklearn import metrics
 from sklearn.model_selection import StratifiedKFold
 
@@ -42,7 +42,16 @@ folds = StratifiedKFold(n_splits=NFOLDS, shuffle=True, random_state=RANDOM_STATE
 oof_preds = np.zeros((len(train), 1))
 test_preds = np.zeros((len(test), 1))
 
-param = {'metric': 'auc'}
+param = {
+    'metric': 'auc',
+    'objective': 'binary',
+    'force_col_wise': True,
+    'seed': RANDOM_STATE,
+    'feature_fraction_seed': RANDOM_STATE,
+    'bagging_seed': RANDOM_STATE,
+    'drop_seed': RANDOM_STATE,
+    'data_random_seed': RANDOM_STATE,
+}
 num_round = 1000000
 early_stopping_rounds = 3500
 

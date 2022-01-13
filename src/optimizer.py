@@ -79,8 +79,15 @@ class HyperBoostOptimizer(object):
         trn_data = lgb.Dataset(trn_x, trn_y, silent=True, params={'verbose': -1})
         val_data = lgb.Dataset(val_x, val_y, silent=True, params={'verbose': -1})
 
+        para['reg_params']['objective'] = 'binary'
         para['reg_params']['force_col_wise'] = True
         para['reg_params']['metric'] = 'auc'
+        para['reg_params']['seed'] = self.RANDOM_STATE
+        para['reg_params']['feature_fraction_seed'] = self.RANDOM_STATE
+        para['reg_params']['bagging_seed'] = self.RANDOM_STATE
+        para['reg_params']['drop_seed'] = self.RANDOM_STATE
+        para['reg_params']['data_random_seed'] = self.RANDOM_STATE
+
 
         clf = lgb.train(para['reg_params'], trn_data,
                         valid_sets=[trn_data, val_data],

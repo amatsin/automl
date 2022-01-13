@@ -25,6 +25,9 @@ def load_data(scale=True, load_test=True, n_train_rows=None, remove_synth=True, 
     if scale:
         train = scale_data_train(train)
 
+    # TODO: we should not need to do this
+    train['target'] = train['target'].astype(int)
+
     return train
 
 
@@ -47,6 +50,10 @@ def load_with_test(remove_synth, scale, original_train, autofeat_transform=False
     print("Test length: ", len(test))
     if scale:
         train, test = scale_data(train, test)
+
+    # TODO: we should not need to do this
+    train['target'] = train['target'].astype(int)
+
     return train, test
 
 
