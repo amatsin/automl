@@ -15,10 +15,12 @@ from monitor import Monitor
 
 
 def prepare_data(autofeat_transform=False):
-    train = load_data(load_test=False, n_train_rows=100, autofeat_transform=autofeat_transform)  # set n_train_rows=100 for fast test iterations
+    train = load_data(autofeat_transform=autofeat_transform)  # set n_train_rows=100 for fast iterations
     y = train.target.values
     train = train.drop(['ID_code', 'target'], axis=1)
     X = train.values.astype(float)
+    print('X shape returned by prepare_data function', X.shape)
+    print('y shape returned by prepare_data function', y.shape)
     return X, y
 
 
