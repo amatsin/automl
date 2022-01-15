@@ -39,9 +39,9 @@ def create_contingency_table(true_pred, baseline_pred, optimized_pred):
 
 def calculate_mcnemar_test(contingency_df):
     # calculate mcnemar test
-    result = mcnemar(contingency_df.to_numpy(), exact=False, correction=True)
+    result = mcnemar(contingency_df.to_numpy())
     # summarize the finding
-    print('statistic=%.5f, p-value=%.20f' % (result.statistic, result.pvalue))
+    print('statistic=%.5f, p-value=%.5e' % (result.statistic, result.pvalue))
     # interpret the p-value
     alpha = 0.05
     if result.pvalue > alpha:
