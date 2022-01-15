@@ -1,0 +1,15 @@
+{
+    "bagging_fraction": 0.5391659049444181,
+    "bagging_freq": 0,
+    "feature_fraction": 0.9334555223596362,
+    "lambda_l1": 9.27550341093405,
+    "lambda_l2": 48.08264183304878,
+    "learning_rate": 0.021062573278377683,
+    "max_bin": 231.0,
+    "max_depth": 3.0,
+    "min_child_weight": 0.020034695690058585,
+    "min_data_in_leaf": 132.0,
+    "min_gain_to_split": 0.9038071873841691,
+    "n_estimators": 6148.0,
+    "num_leaves": 251.0
+}
