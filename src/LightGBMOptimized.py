@@ -10,7 +10,7 @@ from sklearn import metrics
 from sklearn.model_selection import StratifiedKFold
 
 import wandb
-from dataloader import load_data
+from dataloader import load_data, load_test_data
 
 warnings.filterwarnings("ignore")  # to avoid deprecation warnings
 
@@ -25,18 +25,23 @@ MODEL_NAME = "{0}__folds{1}".format(script_name, NFOLDS)
 print("Model: {}".format(MODEL_NAME))
 
 train = load_data(autofeat_transform=False)
+test = load_test_data()
 
 y = train.target.values
 train_ids = train.ID_code.values
 train = train.drop(['ID_code', 'target'], axis=1)
 feature_list = train.columns
 
+test_ids = test.ID_code.values
+test = test[feature_list]
 
 X = train.values.astype(float)
+X_test = test.values.astype(float)
 
 clfs = []
 folds = StratifiedKFold(n_splits=NFOLDS, shuffle=True, random_state=RANDOM_STATE)
 oof_preds = np.zeros((len(train), 1))
+test_preds = np.zeros((len(test), 1))
 
 num_round = 1000000
 early_stopping_rounds = 3500
@@ -96,9 +101,13 @@ for fold_, (trn_, val_) in enumerate(folds.split(y, y)):
                     callbacks=[wandb.lightgbm.wandb_callback()])
 
     val_pred = clf.predict(val_x, num_iteration=clf.best_iteration)
+    test_fold_pred = clf.predict(X_test, num_iteration=clf.best_iteration)
 
     print("AUC = {}".format(metrics.roc_auc_score(val_y, val_pred)))
     oof_preds[val_, :] = val_pred.reshape((-1, 1))
+    test_preds += test_fold_pred.reshape((-1, 1))
+
+test_preds /= NFOLDS
 
 roc_score = metrics.roc_auc_score(y, oof_preds.ravel())
 print("Overall AUC = {}".format(roc_score))
@@ -111,3 +120,10 @@ oof_preds.to_csv('../kfolds/{}__{}.csv'.format(MODEL_NAME, str(roc_score)), inde
 print("Saving code to reproduce")
 shutil.copyfile(os.path.basename(__file__),
                 '../model_source/{}__{}.py'.format(MODEL_NAME, str(roc_score)))
+
+print("Saving submission file")
+sample = pd.read_csv('../input/santander-customer-transaction-prediction/sample_submission.csv')
+sample.target = test_preds.astype(float)
+sample.ID_code = test_ids
+sample.to_csv('../model_predictions/submission_{}__{}.csv'.format(MODEL_NAME,
+                                                                  str(roc_score)), index=False)

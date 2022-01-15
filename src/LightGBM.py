@@ -10,7 +10,7 @@ from sklearn import metrics
 from sklearn.model_selection import StratifiedKFold
 
 import wandb
-from dataloader import load_data
+from dataloader import load_data, load_test_data
 
 warnings.filterwarnings("ignore")  # to avoid deprecation warnings
 
@@ -24,7 +24,8 @@ MODEL_NAME = "{0}__folds{1}".format(script_name, NFOLDS)
 
 print("Model: {}".format(MODEL_NAME))
 
-train, test = load_data()
+train = load_data()
+test = load_test_data()
 
 y = train.target.values
 train_ids = train.ID_code.values

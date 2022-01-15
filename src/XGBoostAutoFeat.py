@@ -11,7 +11,7 @@ from sklearn.model_selection import StratifiedKFold
 from wandb.xgboost import wandb_callback
 
 import wandb
-from dataloader import load_data
+from dataloader import load_data, load_test_data
 from imblearn.over_sampling import RandomOverSampler
 
 
@@ -22,16 +22,20 @@ def run():
     MODEL_NAME = "{0}__folds{1}".format(script_name, NFOLDS)
     print("Model: {}".format(MODEL_NAME))
     train = load_data(autofeat_transform=True)
+    test = load_test_data(autofeat_transform=True)
     y = train.target.values
     train_ids = train.ID_code.values
     train = train.drop(['ID_code', 'target'], axis=1)
-
+    feature_list = train.columns
+    test_ids = test.ID_code.values
+    test = test[feature_list]
     X = train.values.astype(float)
+    X_test = test.values.astype(float)
     folds = StratifiedKFold(n_splits=NFOLDS, shuffle=True, random_state=RANDOM_STATE)
     sampler = RandomOverSampler(random_state=RANDOM_STATE)
 
     oof_preds = np.zeros((len(train), 1))
-
+    test_preds = np.zeros((len(test), 1))
     params = {
         'objective': 'binary:logistic',
         'eval_metric': 'auc',
@@ -75,12 +79,21 @@ def run():
                         early_stopping_rounds=EARLY_STOP, verbose_eval=100, callbacks=[wandb_callback()])
 
         val_pred = clf.predict(xgb.DMatrix(X[valid_index, :]))
+        test_fold_pred = clf.predict(xgb.DMatrix(X_test))
 
         print("AUC = {}".format(metrics.roc_auc_score(y[valid_index], val_pred)))
         oof_preds[valid_index, :] = val_pred.reshape((-1, 1))
-
+        test_preds += test_fold_pred.reshape((-1, 1))
+    test_preds /= NFOLDS
     roc_score = metrics.roc_auc_score(y, oof_preds.ravel())
     print("Overall AUC = {}".format(roc_score))
+
+    print("Saving submission file")
+    sample = pd.read_csv('../input/santander-customer-transaction-prediction/sample_submission.csv')
+    sample.target = test_preds.astype(float)
+    sample.ID_code = test_ids
+    sample.to_csv('../model_predictions/submission_{}__{}.csv'.format(MODEL_NAME,
+                                                                      str(roc_score)), index=False)
 
     print("Saving OOF predictions")
     oof_preds = pd.DataFrame(np.column_stack((train_ids,
