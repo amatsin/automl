@@ -33,7 +33,7 @@ class HyperBoostOptimizer(object):
         self.space = space
         self.X, self.y = prepare_data(autofeat_transform)
         self.baseline_loss = self.find_baseline_loss()
-        self.filename = f'{fn_name}_at_{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'
+        self.filename = f'{fn_name}_at_{datetime.now().strftime("%Y-%m-%d %H-%M-%S")}'
         self.monitor = Monitor(self.baseline_loss, self.filename)
 
     def process(self, algo, max_evals, existing_trials_file=None):
