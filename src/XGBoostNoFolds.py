@@ -4,10 +4,8 @@ import warnings
 from collections import Counter
 
 import pandas as pd
-import wandb
 import xgboost as xgb
 from imblearn.over_sampling import RandomOverSampler
-from wandb.xgboost import wandb_callback
 
 from dataloader import load_data, load_test_data
 
@@ -35,7 +33,10 @@ def run():
         "gamma": 0.0619160464029609,
         "max_depth": 2,
         "min_child_weight": 72,
-        "subsample": 0.8247362099753516
+        "subsample": 0.8247362099753516,
+        'eval_metric':      'auc',
+        'objective':        'binary:logistic',
+        'tree_method':      'gpu_hist'
     }
 
     xgb_fit_params = {
