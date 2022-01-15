@@ -4,8 +4,8 @@ import shutil
 import numpy as np
 import pandas as pd
 from sklearn import metrics
+from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.model_selection import StratifiedKFold
-from sklearn.tree import ExtraTreeClassifier
 
 from dataloader import load_data
 
@@ -18,41 +18,32 @@ MODEL_NAME = "{0}__folds{1}".format(script_name, NFOLDS)
 
 print("Model: {}".format(MODEL_NAME))
 
-train, test = load_data()
+train = load_data()
 
 y = train.target.values
 train_ids = train.ID_code.values
 train = train.drop(['ID_code', 'target'], axis=1)
 feature_list = train.columns
 
-test_ids = test.ID_code.values
-test = test[feature_list]
-
 X = train.values.astype(float)
-X_test = test.values.astype(float)
 
 clfs = []
 folds = StratifiedKFold(n_splits=NFOLDS, shuffle=True, random_state=RANDOM_STATE)
 oof_preds = np.zeros((len(train), 1))
-test_preds = np.zeros((len(test), 1))
 
 for fold_, (trn_, val_) in enumerate(folds.split(y, y)):
     print("Current Fold: {}".format(fold_))
     trn_x, trn_y = X[trn_, :], y[trn_]
     val_x, val_y = X[val_, :], y[val_]
 
-    clf = ExtraTreeClassifier()
+    clf = ExtraTreesClassifier(n_estimators=1000, random_state=RANDOM_STATE, verbose=1, n_jobs=-1)
 
     clf.fit(trn_x, trn_y)
 
     val_pred = clf.predict_proba(val_x)[:, 1]
-    test_fold_pred = clf.predict_proba(X_test)[:, 1]
 
     print("AUC = {}".format(metrics.roc_auc_score(val_y, val_pred)))
     oof_preds[val_, :] = val_pred.reshape((-1, 1))
-    test_preds += test_fold_pred.reshape((-1, 1))
-
-test_preds /= NFOLDS
 
 roc_score = metrics.roc_auc_score(y, oof_preds.ravel())
 print("Overall AUC = {}".format(roc_score))
@@ -65,10 +56,3 @@ oof_preds.to_csv('../kfolds/{}__{}.csv'.format(MODEL_NAME, str(roc_score)), inde
 print("Saving code to reproduce")
 shutil.copyfile(os.path.basename(__file__),
                 '../model_source/{}__{}.py'.format(MODEL_NAME, str(roc_score)))
-
-print("Saving submission file")
-sample = pd.read_csv('../input/santander-customer-transaction-prediction/sample_submission.csv')
-sample.target = test_preds.astype(float)
-sample.ID_code = test_ids
-sample.to_csv('../model_predictions/submission_{}__{}.csv'.format(MODEL_NAME,
-                                                                  str(roc_score)), index=False)

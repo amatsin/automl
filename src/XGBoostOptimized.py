@@ -21,33 +21,33 @@ def run():
     script_name = os.path.basename(__file__).split('.')[0]
     MODEL_NAME = "{0}__folds{1}".format(script_name, NFOLDS)
     print("Model: {}".format(MODEL_NAME))
-    train, test = load_data(remove_synth=False)
+    train = load_data(autofeat_transform=False)
     y = train.target.values
     train_ids = train.ID_code.values
     train = train.drop(['ID_code', 'target'], axis=1)
-    feature_list = train.columns
-    test_ids = test.ID_code.values
-    test = test[feature_list]
+
     X = train.values.astype(float)
-    X_test = test.values.astype(float)
     folds = StratifiedKFold(n_splits=NFOLDS, shuffle=True, random_state=RANDOM_STATE)
     sampler = RandomOverSampler(random_state=RANDOM_STATE)
 
     oof_preds = np.zeros((len(train), 1))
-    test_preds = np.zeros((len(test), 1))
+
     params = {
-        "alpha": 0.8875686171026675,
-        "colsample_bytree": 0.9437658134783333,
-        "eta": 0.0657450727212271,
-        "gamma": 1,
-        "gamma_2": 0.7954184986719407,
-        "max_depth": 3,
-        "min_child_weight": 5,
-        "subsample": 0.842811800342022,
-        "eval_metric": "auc",
+        'objective': 'binary:logistic',
+        'eval_metric': 'auc',
+        'tree_method': 'hist',
+        "alpha": 0.832486070007167,
+        "colsample_bytree": 0.8892966997331828,
+        "eta": 0.050656726987950894,
+        "gamma": 0.0619160464029609,
+        "max_depth": 2,
+        "min_child_weight": 72,
+        "subsample": 0.8247362099753516
     }
-    ITERATIONS = 1000
-    EARLY_STOP = 10
+
+    ITERATIONS = 4000
+    EARLY_STOP = 50
+
     config = dict(
         early_stop=EARLY_STOP,
         iterations=ITERATIONS,
@@ -72,24 +72,15 @@ def run():
         xg_valid = xgb.DMatrix(X_val, y_val)
 
         clf = xgb.train(params, xg_train, ITERATIONS, evals=[(xg_train, "train"), (xg_valid, "eval")],
-                        early_stopping_rounds=EARLY_STOP, verbose_eval=False, callbacks=[wandb_callback()])
+                        early_stopping_rounds=EARLY_STOP, verbose_eval=100, callbacks=[wandb_callback()])
 
         val_pred = clf.predict(xgb.DMatrix(X[valid_index, :]))
-        test_fold_pred = clf.predict(xgb.DMatrix(X_test))
 
         print("AUC = {}".format(metrics.roc_auc_score(y[valid_index], val_pred)))
         oof_preds[valid_index, :] = val_pred.reshape((-1, 1))
-        test_preds += test_fold_pred.reshape((-1, 1))
-    test_preds /= NFOLDS
+
     roc_score = metrics.roc_auc_score(y, oof_preds.ravel())
     print("Overall AUC = {}".format(roc_score))
-
-    print("Saving submission file")
-    sample = pd.read_csv('../input/santander-customer-transaction-prediction/sample_submission.csv')
-    sample.target = test_preds.astype(float)
-    sample.ID_code = test_ids
-    sample.to_csv('../model_predictions/submission_{}__{}.csv'.format(MODEL_NAME,
-                                                                      str(roc_score)), index=False)
 
     print("Saving OOF predictions")
     oof_preds = pd.DataFrame(np.column_stack((train_ids,

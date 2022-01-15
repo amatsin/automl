@@ -24,23 +24,19 @@ MODEL_NAME = "{0}__folds{1}".format(script_name, NFOLDS)
 
 print("Model: {}".format(MODEL_NAME))
 
-train, test = load_data()
+train = load_data(autofeat_transform=False)
 
 y = train.target.values
 train_ids = train.ID_code.values
 train = train.drop(['ID_code', 'target'], axis=1)
 feature_list = train.columns
 
-test_ids = test.ID_code.values
-test = test[feature_list]
 
 X = train.values.astype(float)
-X_test = test.values.astype(float)
 
 clfs = []
 folds = StratifiedKFold(n_splits=NFOLDS, shuffle=True, random_state=RANDOM_STATE)
 oof_preds = np.zeros((len(train), 1))
-test_preds = np.zeros((len(test), 1))
 
 num_round = 1000000
 early_stopping_rounds = 3500
@@ -61,20 +57,27 @@ wandb.init(
 sampler = RandomOverSampler(random_state=RANDOM_STATE)
 
 param = {
-    "bagging_fraction": 0.4181730270548091,
+    'metric': 'auc',
+    'objective': 'binary',
+    'force_col_wise': True,
+    'seed': RANDOM_STATE,
+    'feature_fraction_seed': RANDOM_STATE,
+    'bagging_seed': RANDOM_STATE,
+    'drop_seed': RANDOM_STATE,
+    'data_random_seed': RANDOM_STATE,
+    "bagging_fraction": 0.9122824896520538,
     "bagging_freq": 0,
-    "feature_fraction": 0.8214443211204583,
-    "lambda_l1": 4.546921512760859,
-    "lambda_l2": 62.530403597101895,
-    "learning_rate": 0.01525765187013468,
-    "max_bin": 277,
-    "max_depth": 3,
-    "min_child_weight": 0.013840900742465337,
-    "min_data_in_leaf": 764,
-    "min_gain_to_split": 0.03389806406257723,
-    "n_estimators": 7108,
-    "num_leaves": 2979,
-    "metric": 'auc'
+    "feature_fraction": 0.9013535727184907,
+    "lambda_l1": 13.573851578540197,
+    "lambda_l2": 54.863888555562745,
+    "learning_rate": 0.01668645036285613,
+    "max_bin": 289,
+    "max_depth": 7,
+    "min_child_weight": 0.06983228686062865,
+    "min_data_in_leaf": 4425,
+    "min_gain_to_split": 0.0815706666905438,
+    "n_estimators": 8444,
+    "num_leaves": 39
 }
 
 for fold_, (trn_, val_) in enumerate(folds.split(y, y)):
@@ -93,13 +96,9 @@ for fold_, (trn_, val_) in enumerate(folds.split(y, y)):
                     callbacks=[wandb.lightgbm.wandb_callback()])
 
     val_pred = clf.predict(val_x, num_iteration=clf.best_iteration)
-    test_fold_pred = clf.predict(X_test, num_iteration=clf.best_iteration)
 
     print("AUC = {}".format(metrics.roc_auc_score(val_y, val_pred)))
     oof_preds[val_, :] = val_pred.reshape((-1, 1))
-    test_preds += test_fold_pred.reshape((-1, 1))
-
-test_preds /= NFOLDS
 
 roc_score = metrics.roc_auc_score(y, oof_preds.ravel())
 print("Overall AUC = {}".format(roc_score))
@@ -112,10 +111,3 @@ oof_preds.to_csv('../kfolds/{}__{}.csv'.format(MODEL_NAME, str(roc_score)), inde
 print("Saving code to reproduce")
 shutil.copyfile(os.path.basename(__file__),
                 '../model_source/{}__{}.py'.format(MODEL_NAME, str(roc_score)))
-
-print("Saving submission file")
-sample = pd.read_csv('../input/santander-customer-transaction-prediction/sample_submission.csv')
-sample.target = test_preds.astype(float)
-sample.ID_code = test_ids
-sample.to_csv('../model_predictions/submission_{}__{}.csv'.format(MODEL_NAME,
-                                                                  str(roc_score)), index=False)
