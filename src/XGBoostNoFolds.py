@@ -9,7 +9,7 @@ import xgboost as xgb
 from imblearn.over_sampling import RandomOverSampler
 from wandb.xgboost import wandb_callback
 
-from dataloader import load_data
+from dataloader import load_data, load_test_data
 
 
 def run():
@@ -17,7 +17,8 @@ def run():
     script_name = os.path.basename(__file__).split('.')[0]
     MODEL_NAME = "{0}".format(script_name)
     print("Model: {}".format(MODEL_NAME))
-    train, test = load_data(remove_synth=False)
+    train = load_data()
+    test = load_test_data()
     y = train.target.values
     train = train.drop(['ID_code', 'target'], axis=1)
     feature_list = train.columns
@@ -28,36 +29,27 @@ def run():
     sampler = RandomOverSampler(random_state=RANDOM_STATE)
 
     params = {
-        "alpha": 0.6763306576868031,
-        "colsample_bytree": 0.9781695650765355,
-        "eta": 0.08258822790738427,
-        "gamma": 0.5522919248987054,
-        "max_depth": 3,
-        "min_child_weight": 6,
-        "subsample": 0.8225789960827787,
-        "eval_metric": "auc",
+        "alpha": 0.832486070007167,
+        "colsample_bytree": 0.8892966997331828,
+        "eta": 0.050656726987950894,
+        "gamma": 0.0619160464029609,
+        "max_depth": 2,
+        "min_child_weight": 72,
+        "subsample": 0.8247362099753516
     }
-    ITERATIONS = 1000
-    EARLY_STOP = 10
-    config = dict(
-        early_stop=EARLY_STOP,
-        iterations=ITERATIONS,
-        model="XGBoost",
-        nfolds=1,
-    )
-    wandb.init(
-        project="baseline",
-        entity="automldudes",
-        config=config,
-    )
+
+    xgb_fit_params = {
+        'num_boost_round': 4000,
+        'early_stopping_rounds': 50,
+        'verbose_eval': 100
+    }
 
     X_res, y_res = sampler.fit_resample(X, y)
     print(f"Training target statistics: {Counter(y_res)}")
 
     xg_train = xgb.DMatrix(X_res, y_res)
 
-    clf = xgb.train(params, xg_train, ITERATIONS, evals=[(xg_train, "train")],
-                    early_stopping_rounds=EARLY_STOP, verbose_eval=False, callbacks=[wandb_callback()])
+    clf = xgb.train(params, xg_train, evals=[(xg_train, "train")], **xgb_fit_params)
     test_preds = clf.predict(xgb.DMatrix(X_test))
     print("Saving submission file")
     sample = pd.read_csv('../input/santander-customer-transaction-prediction/sample_submission.csv')
@@ -66,8 +58,7 @@ def run():
     sample.to_csv('../model_predictions/submission_{}.csv'.format(MODEL_NAME), index=False)
 
     print("Saving code to reproduce")
-    shutil.copyfile(os.path.basename(__file__),
-                    '../model_source/{}.py'.format(MODEL_NAME))
+    shutil.copyfile(os.path.basename(__file__), '../model_source/{}.py'.format(MODEL_NAME))
 
 
 if __name__ == "__main__":
