@@ -59,7 +59,7 @@ class Monitor:
         with open(self.filename + '.json', mode='w') as fp:
             json.dump(trials.trials, fp, indent=4, sort_keys=True, default=str)
 
-    def save_trials_auc_graph(self, trials, title=None):
+    def save_trials_auc_graph(self, trials, title=None, y_lim=(0.55, 0.95)):
         f, ax = plt.subplots(1)
         try:
             xs = [t['tid'] for t in trials.trials]
@@ -68,7 +68,7 @@ class Monitor:
             xs = [t['tid'] for t in trials]
             ys = [1 - t['result']['loss'] for t in trials]
         ax.set_xlim([0, len(trials)])
-        # ax.set_ylim([0.45, 0.098])
+        ax.set_ylim(y_lim)
         ax.scatter(xs, ys, s=20, linewidth=0.01, alpha=0.75, label='AUC at trial')
         plt.axhline(y=1 - self.baseline_loss, color='r', label='baseline')
         ax.legend()
