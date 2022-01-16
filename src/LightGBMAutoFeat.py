@@ -107,6 +107,10 @@ for fold_, (trn_, val_) in enumerate(folds.split(y, y)):
     oof_preds[val_, :] = val_pred.reshape((-1, 1))
     test_preds += test_fold_pred.reshape((-1, 1))
 
+    print('Saving model...')
+    # save model to file
+    clf.save_model(f'lightgbm-autofeat-{fold_}.txt')
+
 test_preds /= NFOLDS
 
 roc_score = metrics.roc_auc_score(y, oof_preds.ravel())

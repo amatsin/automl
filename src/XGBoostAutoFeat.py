@@ -84,6 +84,10 @@ def run():
         print("AUC = {}".format(metrics.roc_auc_score(y[valid_index], val_pred)))
         oof_preds[valid_index, :] = val_pred.reshape((-1, 1))
         test_preds += test_fold_pred.reshape((-1, 1))
+
+        print("Saving model...")
+        clf.save_model(f"xgb-autofeat-{fold_}.json")
+
     test_preds /= NFOLDS
     roc_score = metrics.roc_auc_score(y, oof_preds.ravel())
     print("Overall AUC = {}".format(roc_score))
